@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "start": "cd apps/api && node dist/server.js",
+    "start": "cd apps/api && npx prisma migrate deploy && node dist/server.js",
     "build": "npm run build --workspace=packages/shared && npm run build --workspace=apps/api",
     "dev": "concurrently \"npm run dev --workspace=apps/api\" \"npm run dev --workspace=apps/web\"",
     "build:all": "npm run build --workspace=packages/shared && npm run build --workspace=apps/api && npm run build --workspace=apps/web",
