@@ -7,7 +7,9 @@ export interface Tenant {
   phone: string
   address: string
   logoUrl?: string
-  plan: 'FREE' | 'PRO' | 'ENTERPRISE'
+  plan: 'PRO' | 'ENTERPRISE'
+  trialEndsAt?: Date
+  asaasCustomerId?: string
   active: boolean
   createdAt: Date
 }
@@ -178,6 +180,82 @@ export interface InvoiceItem {
   quantity: number
   unitPrice: number
   total: number
+}
+
+// ─── Billing ─────────────────────────────────────────────────────
+export type Plan = 'PRO' | 'ENTERPRISE'
+export type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'SUSPENDED' | 'CANCELLED'
+export type BillingCycle = 'MONTHLY' | 'ANNUAL'
+export type BillingPaymentStatus = 'PENDING' | 'CONFIRMED' | 'RECEIVED' | 'OVERDUE' | 'REFUNDED' | 'CANCELLED'
+export type AccessStatus = 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'BLOCKED'
+
+export const PLAN_LIMITS = {
+  PRO: {
+    maxUsers: 15,
+    maxPatients: 2_000,
+    maxAppointmentsPerMonth: 500,
+    modules: {
+      aiScribe: true,
+      telemedicine: true,
+      nfe: true,
+      hospitalization: true,
+      advancedReports: true,
+    },
+  },
+  ENTERPRISE: {
+    maxUsers: Infinity,
+    maxPatients: Infinity,
+    maxAppointmentsPerMonth: Infinity,
+    modules: {
+      aiScribe: true,
+      telemedicine: true,
+      nfe: true,
+      hospitalization: true,
+      advancedReports: true,
+    },
+  },
+} as const
+
+export type PlanModule = keyof typeof PLAN_LIMITS.PRO.modules
+
+export const PLAN_PRICES = {
+  PRO: { monthly: 19700, annual: 189200 },       // em centavos
+  ENTERPRISE: { monthly: 49700, annual: 477200 }, // em centavos
+} as const
+
+export interface Subscription {
+  id: string
+  tenantId: string
+  plan: Plan
+  status: SubscriptionStatus
+  billingCycle: BillingCycle
+  currentPeriodStart: Date
+  currentPeriodEnd: Date
+  cancelledAt?: Date
+  priceInCents: number
+  createdAt: Date
+}
+
+export interface BillingStatus {
+  status: AccessStatus
+  trialDaysRemaining?: number
+  trialEndsAt?: Date
+  subscription?: {
+    plan: Plan
+    status: SubscriptionStatus
+    billingCycle: BillingCycle
+    currentPeriodEnd: Date
+    priceInCents: number
+  }
+  lastPayment?: {
+    status: BillingPaymentStatus
+    dueDate: Date
+    paidAt?: Date
+    pixQrCode?: string
+    pixCopiaECola?: string
+    boletoUrl?: string
+    boletoBarCode?: string
+  }
 }
 
 // ─── API Response ─────────────────────────────────────────────────

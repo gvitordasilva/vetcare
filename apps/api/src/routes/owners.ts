@@ -1,6 +1,7 @@
 import { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { authenticate, authorize, tenantId } from '../middleware/auth'
+import { requireActiveSubscription } from '../middleware/planGuard'
 
 /**
  * Valida CPF usando o algoritmo oficial de dígitos verificadores.
@@ -34,6 +35,7 @@ const cpfSchema = z
 
 export const ownerRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('onRequest', authenticate)
+  app.addHook('onRequest', requireActiveSubscription)
 
   app.get('/', async (req) => {
     const query = z.object({

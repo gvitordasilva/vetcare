@@ -17,6 +17,7 @@
 import { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { authenticate, authorize, tenantId } from '../middleware/auth'
+import { requireActiveSubscription } from '../middleware/planGuard'
 
 const DAILY_BASE = 'https://api.daily.co/v1'
 
@@ -74,6 +75,7 @@ function isDailyConfigured(): boolean {
 
 export const teleconsultationRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('onRequest', authenticate)
+  app.addHook('onRequest', requireActiveSubscription)
 
   /**
    * GET /api/teleconsultation/status

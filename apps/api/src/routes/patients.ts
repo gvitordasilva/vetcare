@@ -1,9 +1,11 @@
 import { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { authenticate, authorize, tenantId } from '../middleware/auth'
+import { requireActiveSubscription, checkLimit } from '../middleware/planGuard'
 
 export const patientRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('onRequest', authenticate)
+  app.addHook('onRequest', requireActiveSubscription)
 
   // ── List ──────────────────────────────────────────────────────
   app.get('/', async (req) => {
@@ -101,7 +103,18 @@ export const patientRoutes: FastifyPluginAsync = async (app) => {
   })
 
   // ── Create ────────────────────────────────────────────────────
-  app.post('/', async (req, reply) => {
+  app.post(
+    '/',
+    {
+      onRequest: [
+        checkLimit(
+          'pacientes',
+          (prisma, tid) => prisma.patient.count({ where: { tenantId: tid, active: true } }),
+          'maxPatients',
+        ),
+      ],
+    },
+    async (req, reply) => {
     const schema = z.object({
       ownerId: z.string(),
       name: z.string().min(1),

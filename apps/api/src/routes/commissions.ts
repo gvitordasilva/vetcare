@@ -1,9 +1,11 @@
 import { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { authenticate, authorize, tenantId } from '../middleware/auth'
+import { requireActiveSubscription } from '../middleware/planGuard'
 
 export const commissionRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('onRequest', authenticate)
+  app.addHook('onRequest', requireActiveSubscription)
 
   /**
    * GET /api/commissions/summary?month=6&year=2026

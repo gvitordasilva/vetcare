@@ -1,9 +1,11 @@
 import { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { authenticate, authorize, tenantId } from '../middleware/auth'
+import { requireActiveSubscription, checkLimit } from '../middleware/planGuard'
 
 export const appointmentRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('onRequest', authenticate)
+  app.addHook('onRequest', requireActiveSubscription)
 
   app.get('/', async (req) => {
     const query = z.object({
@@ -72,7 +74,25 @@ export const appointmentRoutes: FastifyPluginAsync = async (app) => {
     return appt
   })
 
-  app.post('/', async (req, reply) => {
+  app.post(
+    '/',
+    {
+      onRequest: [
+        checkLimit(
+          'agendamentos do mês',
+          async (prisma, tid) => {
+            const firstOfMonth = new Date()
+            firstOfMonth.setDate(1)
+            firstOfMonth.setHours(0, 0, 0, 0)
+            return prisma.appointment.count({
+              where: { tenantId: tid, createdAt: { gte: firstOfMonth } },
+            })
+          },
+          'maxAppointmentsPerMonth',
+        ),
+      ],
+    },
+    async (req, reply) => {
     const schema = z.object({
       patientId: z.string(),
       vetId: z.string(),

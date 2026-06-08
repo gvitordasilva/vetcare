@@ -1,10 +1,12 @@
 import { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { authenticate, authorize, tenantId } from '../middleware/auth'
+import { requireActiveSubscription } from '../middleware/planGuard'
 import * as nuvemFiscal from '../services/nuvemFiscal'
 
 export const fiscalRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('onRequest', authenticate)
+  app.addHook('onRequest', requireActiveSubscription)
 
   /**
    * GET /api/fiscal

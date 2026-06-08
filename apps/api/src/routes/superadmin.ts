@@ -143,7 +143,7 @@ export const superAdminRoutes: FastifyPluginAsync = async (app) => {
       city: z.string().min(2),
       state: z.string().length(2),
       zipCode: z.string().min(8),
-      plan: z.enum(['FREE', 'PRO', 'ENTERPRISE']).default('FREE'),
+      plan: z.enum(['PRO', 'ENTERPRISE']).default('PRO'),
       // Owner da clínica
       ownerName: z.string().min(2),
       ownerEmail: z.string().email(),
@@ -171,6 +171,7 @@ export const superAdminRoutes: FastifyPluginAsync = async (app) => {
         state: data.state,
         zipCode: data.zipCode,
         plan: data.plan,
+        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
         users: {
           create: {
             name: data.ownerName,
@@ -192,7 +193,7 @@ export const superAdminRoutes: FastifyPluginAsync = async (app) => {
   app.patch('/tenants/:id', { onRequest: [authenticateSuperAdmin] }, async (req, reply) => {
     const { id } = z.object({ id: z.string() }).parse(req.params)
     const schema = z.object({
-      plan: z.enum(['FREE', 'PRO', 'ENTERPRISE']).optional(),
+      plan: z.enum(['PRO', 'ENTERPRISE']).optional(),
       active: z.boolean().optional(),
       name: z.string().optional(),
     })

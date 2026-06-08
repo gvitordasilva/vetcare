@@ -21,6 +21,15 @@ api.interceptors.response.use(
     // Não tenta refresh no próprio endpoint de login
     if (original.url?.includes('/auth/login')) return Promise.reject(err)
 
+    // 402 = assinatura expirada/inexistente → redireciona para tela de assinatura
+    if (err.response?.status === 402 && err.response?.data?.subscriptionRequired) {
+      // Evitar loop de redirect dentro da própria rota /assinar
+      if (!original.url?.includes('/billing')) {
+        window.location.href = '/assinar'
+        return Promise.reject(err)
+      }
+    }
+
     if (err.response?.status === 401 && !original._retry) {
       original._retry = true
       const refreshToken = Cookies.get('refreshToken')
@@ -192,4 +201,17 @@ export const aiScribeApi = {
   transcribe:(formData: FormData) =>
     api.post('/ai-scribe/transcribe', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data),
   structure: (text: string) => api.post('/ai-scribe/structure', { text }).then(r => r.data),
+}
+
+export const billingApi = {
+  status:    () => api.get('/billing/status').then(r => r.data),
+  subscribe: (data: {
+    plan: 'PRO' | 'ENTERPRISE'
+    billingCycle?: 'MONTHLY' | 'ANNUAL'
+    paymentMethod?: 'PIX' | 'BOLETO' | 'CREDIT_CARD'
+    cpfCnpj?: string
+  }) => api.post('/billing/subscribe', data).then(r => r.data),
+  payments:  (params?: any) => api.get('/billing/payments', { params }).then(r => r.data),
+  payment:   (id: string)   => api.get(`/billing/payments/${id}`).then(r => r.data),
+  cancel:    (reason?: string) => api.post('/billing/cancel', { reason }).then(r => r.data),
 }

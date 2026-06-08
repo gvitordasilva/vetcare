@@ -12,6 +12,7 @@ import {
 import { isAuthenticated, clearAuth, getUser, getTenant } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 import { authApi } from '@/lib/api'
+import { useBillingStatus } from '@/hooks/useBillingStatus'
 import Cookies from 'js-cookie'
 
 const navItems = [
@@ -37,6 +38,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [tenant, setTenant] = useState<any>(null)
+  const { data: billing } = useBillingStatus()
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -137,6 +139,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
           </div>
         </header>
+
+        {/* Banner de trial */}
+        {billing?.status === 'TRIAL' && (
+          <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 flex items-center justify-between text-sm flex-shrink-0">
+            <span className="text-amber-800">
+              Período de teste:{' '}
+              <strong>{billing.trialDaysRemaining} dia(s) restante(s)</strong>
+            </span>
+            <Link href="/assinar" className="font-semibold underline text-amber-700 hover:text-amber-900 ml-4">
+              Assinar agora
+            </Link>
+          </div>
+        )}
+        {billing?.status === 'PAST_DUE' && (
+          <div className="bg-red-50 border-b border-red-200 px-6 py-2 flex items-center justify-between text-sm flex-shrink-0">
+            <span className="text-red-800">
+              <strong>Pagamento em atraso</strong> — regularize para manter o acesso.
+            </span>
+            <Link href="/configuracoes/billing" className="font-semibold underline text-red-700 hover:text-red-900 ml-4">
+              Ver cobrança
+            </Link>
+          </div>
+        )}
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-6">

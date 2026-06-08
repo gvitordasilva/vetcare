@@ -42,7 +42,7 @@ model Tenant {
   state     String
   zipCode   String
   logoUrl   String?
-  plan      Plan     @default(FREE)
+  plan      Plan     @default(PRO)
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -52,6 +52,12 @@ model Tenant {
   ie        String?        // Inscrição Estadual
   im        String?        // Inscrição Municipal (para NFS-e de serviços)
   taxRegime TaxRegime?
+
+  // Billing
+  trialEndsAt         DateTime?
+  asaasCustomerId     String?
+  subscription        Subscription?
+  billingEvents       BillingEvent[]
 
   users                 User[]
   owners                Owner[]
@@ -76,7 +82,6 @@ enum TaxRegime {
 }
 
 enum Plan {
-  FREE
   PRO
   ENTERPRISE
 }
@@ -633,5 +638,82 @@ enum TeleconsultationStatus {
   WAITING
   ACTIVE
   ENDED
+  CANCELLED
+}
+
+// ─── Billing / Assinaturas ────────────────────────────────────────
+model Subscription {
+  id                  String             @id @default(cuid())
+  tenantId            String             @unique
+  plan                Plan
+  status              SubscriptionStatus @default(ACTIVE)
+  billingCycle        BillingCycle       @default(MONTHLY)
+  asaasSubscriptionId String?            @unique
+  currentPeriodStart  DateTime
+  currentPeriodEnd    DateTime
+  cancelledAt         DateTime?
+  cancelReason        String?
+  priceInCents        Int
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  tenant   Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payments BillingPayment[]
+
+  @@index([status])
+}
+
+model BillingPayment {
+  id               String             @id @default(cuid())
+  subscriptionId   String
+  asaasChargeId    String?            @unique
+  amountInCents    Int
+  status           BillingPaymentStatus @default(PENDING)
+  paymentMethod    String?            // PIX | BOLETO | CREDIT_CARD
+  dueDate          DateTime
+  paidAt           DateTime?
+  pixQrCode        String?
+  pixCopiaECola    String?
+  boletoUrl        String?
+  boletoBarCode    String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@index([status, dueDate])
+}
+
+model BillingEvent {
+  id          String   @id @default(cuid())
+  tenantId    String
+  event       String
+  payload     Json
+  processedAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, processedAt])
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  CANCELLED
+}
+
+enum BillingCycle {
+  MONTHLY
+  ANNUAL
+}
+
+enum BillingPaymentStatus {
+  PENDING
+  CONFIRMED
+  RECEIVED
+  OVERDUE
+  REFUNDED
   CANCELLED
 }

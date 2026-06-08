@@ -58,6 +58,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     const passwordHash = await bcrypt.hash(password, 12)
 
+    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+
     const tenant = await app.prisma.tenant.create({
       data: {
         name: clinicName,
@@ -68,6 +70,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         city,
         state,
         zipCode,
+        plan: 'PRO',           // trial inicia com acesso PRO completo
+        trialEndsAt,
         users: {
           create: {
             name: ownerName,

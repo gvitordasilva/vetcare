@@ -1,8 +1,10 @@
 import { FastifyPluginAsync } from 'fastify'
 import { authenticate, tenantId } from '../middleware/auth'
+import { requireActiveSubscription } from '../middleware/planGuard'
 
 export const dashboardRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('onRequest', authenticate)
+  app.addHook('onRequest', requireActiveSubscription)
 
   app.get('/', async (req) => {
     const tid = tenantId(req)

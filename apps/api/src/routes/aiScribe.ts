@@ -1,10 +1,12 @@
 import { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { authenticate, tenantId } from '../middleware/auth'
+import { requireActiveSubscription } from '../middleware/planGuard'
 import { processConsultationAudio, isWhisperConfigured, isClaudeConfigured } from '../services/aiScribe'
 
 export const aiScribeRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('onRequest', authenticate)
+  app.addHook('onRequest', requireActiveSubscription)
 
   /**
    * GET /api/ai-scribe/status

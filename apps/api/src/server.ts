@@ -28,9 +28,11 @@ import { fiscalRoutes } from './routes/fiscal'
 import { commissionRoutes } from './routes/commissions'
 import { teleconsultationRoutes } from './routes/teleconsultation'
 import { aiScribeRoutes } from './routes/aiScribe'
+import { billingRoutes } from './routes/billing'
 import { startVaccineReminderJob } from './jobs/vaccineReminder'
 import { startInvoiceOverdueJob } from './jobs/invoiceOverdue'
 import { startAppointmentReminderJob } from './jobs/appointmentReminder'
+import { startTrialExpiryJob } from './jobs/trialExpiry'
 
 const app = Fastify({
   logger: {
@@ -104,6 +106,7 @@ async function bootstrap() {
   await app.register(commissionRoutes,      { prefix: '/api/commissions' })
   await app.register(teleconsultationRoutes,{ prefix: '/api/teleconsultation' })
   await app.register(aiScribeRoutes,        { prefix: '/api/ai-scribe' })
+  await app.register(billingRoutes,         { prefix: '/api/billing' })
 
   // ── Error handler global ─────────────────────────────────────────────────
   // ZodError lançado por schema.parse() retornaria 500 sem isso.
@@ -126,6 +129,7 @@ async function bootstrap() {
     startVaccineReminderJob(app)
     startInvoiceOverdueJob(app)
     startAppointmentReminderJob(app)
+    startTrialExpiryJob(app)
   }
 
   await app.listen({

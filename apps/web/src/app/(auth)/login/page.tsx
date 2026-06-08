@@ -207,9 +207,9 @@ export default function LoginPage() {
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-6">
-            Sem cadastro?{' '}
-            <Link href="/register" className="text-primary font-medium hover:underline">
-              Criar conta grátis
+            Sem conta?{' '}
+            <Link href="/pricing" className="text-primary font-medium hover:underline">
+              Ver planos e preços
             </Link>
           </p>
         </div>

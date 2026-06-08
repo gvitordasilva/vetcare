@@ -3,7 +3,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { tenantApi } from '@/lib/api'
-import { Loader2, Save, Users, Building2, Plus, X, CheckCircle } from 'lucide-react'
+import { Loader2, Save, Users, Building2, Plus, X, CheckCircle, CreditCard } from 'lucide-react'
+import Link from 'next/link'
 import { useState } from 'react'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -18,7 +19,7 @@ type NewUserForm = z.infer<typeof newUserSchema>
 
 export default function ConfiguracoesPage() {
   const qc = useQueryClient()
-  const [activeTab, setActiveTab] = useState<'clinic' | 'users'>('clinic')
+  const [activeTab, setActiveTab] = useState<'clinic' | 'users' | 'billing'>('clinic')
   const [savedOk, setSavedOk] = useState(false)
   const [newUserOpen, setNewUserOpen] = useState(false)
 
@@ -58,8 +59,9 @@ export default function ConfiguracoesPage() {
 
       <div className="flex gap-2 border-b border-gray-200">
         {[
-          { key: 'clinic', label: 'Clínica', icon: Building2 },
-          { key: 'users',  label: 'Usuários', icon: Users },
+          { key: 'clinic',   label: 'Clínica',     icon: Building2 },
+          { key: 'users',    label: 'Usuários',    icon: Users },
+          { key: 'billing',  label: 'Assinatura',  icon: CreditCard },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -199,6 +201,20 @@ export default function ConfiguracoesPage() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+      {activeTab === 'billing' && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <p className="text-sm text-gray-500 mb-4">
+            Gerencie sua assinatura, histórico de pagamentos e dados de cobrança.
+          </p>
+          <Link
+            href="/configuracoes/billing"
+            className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-primary/90 transition"
+          >
+            <CreditCard className="w-4 h-4" />
+            Gerenciar assinatura
+          </Link>
         </div>
       )}
     </div>
