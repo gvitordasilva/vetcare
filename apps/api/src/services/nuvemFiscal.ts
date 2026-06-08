@@ -36,7 +36,7 @@ async function getAccessToken(): Promise<string> {
     throw new Error(`Nuvem Fiscal auth failed (${res.status}): ${body}`)
   }
 
-  const data = await res.json()
+  const data = await res.json() as any
   _accessToken  = data.access_token
   _tokenExpiry  = Date.now() + data.expires_in * 1000
   return _accessToken!
