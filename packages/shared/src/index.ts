@@ -22,7 +22,7 @@ export interface User {
   createdAt: Date
 }
 
-export type UserRole = 'OWNER' | 'ADMIN' | 'VET' | 'RECEPTIONIST'
+export type UserRole = 'OWNER' | 'ADMIN' | 'VET' | 'RECEPTIONIST' | 'TUTOR'
 
 export interface AuthTokens {
   accessToken: string
