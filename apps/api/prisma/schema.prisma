@@ -1,0 +1,637 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── SuperAdmin (platform level) ─────────────────────────────────
+model SuperAdmin {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  refreshTokens SuperAdminRefreshToken[]
+}
+
+model SuperAdminRefreshToken {
+  id           String   @id @default(cuid())
+  superAdminId String
+  token        String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  superAdmin SuperAdmin @relation(fields: [superAdminId], references: [id], onDelete: Cascade)
+}
+
+// ─── Multi-tenancy ────────────────────────────────────────────────
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  email     String   @unique
+  phone     String
+  address   String
+  city      String
+  state     String
+  zipCode   String
+  logoUrl   String?
+  plan      Plan     @default(FREE)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Dados fiscais para emissão de NF-e / NFS-e
+  cnpj      String?
+  ie        String?        // Inscrição Estadual
+  im        String?        // Inscrição Municipal (para NFS-e de serviços)
+  taxRegime TaxRegime?
+
+  users                 User[]
+  owners                Owner[]
+  patients              Patient[]
+  appointments          Appointment[]
+  consultations         Consultation[]
+  vaccines              Vaccine[]
+  invoices              Invoice[]
+  products              Product[]
+  weightRecords         WeightRecord[]
+  hospitalizations      Hospitalization[]
+  groomingPackages      GroomingPackage[]
+  fiscalDocuments       FiscalDocument[]
+  teleconsultationRooms TeleconsultationRoom[]
+}
+
+enum TaxRegime {
+  MEI
+  SIMPLES_NACIONAL
+  LUCRO_PRESUMIDO
+  LUCRO_REAL
+}
+
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+model User {
+  id           String   @id @default(cuid())
+  tenantId     String
+  name         String
+  email        String
+  passwordHash String
+  role           UserRole @default(RECEPTIONIST)
+  commissionRate Float?   // % de comissão para VETs (0-100). null = sem comissão
+  active         Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments  Appointment[]
+  consultations Consultation[]
+  vaccines      Vaccine[]
+  refreshTokens RefreshToken[]
+  weightRecords WeightRecord[]
+
+  // Internação
+  hospitalizations          Hospitalization[]          @relation("HospResponsibleVet")
+  hospitalizationEvolutions HospitalizationEvolution[] @relation("HospEvolutionVet")
+  prescriptionApplications  PrescriptionApplication[]  @relation("PrescApplicationVet")
+
+  // Telemedicina
+  teleconsultationRooms     TeleconsultationRoom[]     @relation("TeleconsultationVet")
+
+  @@unique([tenantId, email])
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  VET
+  RECEPTIONIST
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Owners & Patients ───────────────────────────────────────────
+model Owner {
+  id        String    @id @default(cuid())
+  tenantId  String
+  name      String
+  email     String?
+  phone     String
+  phone2    String?
+  cpf       String?
+  address   String?
+  city      String?
+  notes     String?
+  active    Boolean   @default(true)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Portal do Tutor — acesso externo somente-leitura para o dono do pet
+  portalPasswordHash  String?
+  portalActive        Boolean  @default(false)
+
+  tenant              Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patients            Patient[]
+  invoices            Invoice[]
+  portalRefreshTokens OwnerRefreshToken[]
+
+  @@unique([tenantId, cpf])
+  @@index([tenantId, active])
+}
+
+model OwnerRefreshToken {
+  id        String   @id @default(cuid())
+  ownerId   String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  owner Owner @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+model Patient {
+  id         String    @id @default(cuid())
+  tenantId   String
+  ownerId    String
+  name       String
+  species    Species
+  breed      String
+  gender     Gender
+  birthDate  DateTime?
+  weight     Float?           // cache do peso mais recente — histórico completo em WeightRecord
+  castrated  Boolean   @default(false)
+  allergies  String?          // alergias a medicamentos/substâncias — campo crítico para segurança clínica
+  color      String?
+  microchip  String?
+  photoUrl   String?
+  notes      String?
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  owner         Owner          @relation(fields: [ownerId], references: [id])
+  appointments  Appointment[]
+  consultations Consultation[]
+  vaccines      Vaccine[]
+  invoices      Invoice[]
+  weightRecords         WeightRecord[]
+  hospitalizations      Hospitalization[]
+  groomingPackages      GroomingPackage[]
+  teleconsultationRooms TeleconsultationRoom[]
+}
+
+enum Species {
+  DOG
+  CAT
+  BIRD
+  RABBIT
+  HAMSTER
+  REPTILE
+  OTHER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+// ─── Appointments ────────────────────────────────────────────────
+model Appointment {
+  id          String            @id @default(cuid())
+  tenantId    String
+  patientId   String
+  vetId       String
+  scheduledAt DateTime
+  duration    Int               @default(30)
+  status      AppointmentStatus @default(SCHEDULED)
+  type        AppointmentType
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient      Patient       @relation(fields: [patientId], references: [id])
+  vet          User          @relation(fields: [vetId], references: [id])
+  consultation         Consultation?
+  invoice              Invoice?
+  teleconsultationRoom TeleconsultationRoom?
+
+  reminderSent Boolean @default(false)   // lembrete de consulta 24h antes enviado
+
+  @@index([tenantId])
+  @@index([tenantId, vetId, scheduledAt])
+  @@index([tenantId, patientId, scheduledAt])
+  @@index([tenantId, status])
+  @@index([tenantId, scheduledAt, reminderSent])
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum AppointmentType {
+  CONSULTATION
+  RETURN
+  VACCINE
+  SURGERY
+  EXAM
+  GROOMING
+  EMERGENCY
+}
+
+// ─── Medical Records ─────────────────────────────────────────────
+model Consultation {
+  id              String    @id @default(cuid())
+  tenantId        String
+  appointmentId   String?   @unique
+  patientId       String
+  vetId           String
+  date            DateTime
+  weight          Float?
+  temperature     Float?
+  heartRate       Int?
+  respiratoryRate Int?
+  anamnesis       String
+  physicalExam    String
+  diagnosis       String
+  treatment       String
+  followUpDate      DateTime?
+  commissionAmount  Float?    // valor de comissão do vet calculado ao pagar a invoice vinculada
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointment   Appointment?  @relation(fields: [appointmentId], references: [id])
+  patient       Patient       @relation(fields: [patientId], references: [id])
+  vet           User          @relation(fields: [vetId], references: [id])
+  prescriptions Prescription[]
+  examRequests  ExamRequest[]
+  weightRecord  WeightRecord?
+
+  @@index([tenantId])
+  @@index([tenantId, patientId])
+  @@index([tenantId, vetId])
+}
+
+model Prescription {
+  id             String @id @default(cuid())
+  consultationId String
+  medication     String
+  dosage         String
+  frequency      String
+  duration       String
+  instructions   String?
+
+  consultation Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+}
+
+model ExamRequest {
+  id             String     @id @default(cuid())
+  consultationId String
+  examType       String
+  laboratory     String?
+  notes          String?
+  status         ExamStatus @default(REQUESTED)
+  resultUrl      String?
+  createdAt      DateTime   @default(now())
+
+  consultation Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+}
+
+enum ExamStatus {
+  REQUESTED
+  DONE
+  CANCELLED
+}
+
+// ─── Weight History ───────────────────────────────────────────────
+// Histórico de pesagens separado do prontuário. Permite registrar peso
+// numa triagem (antes da consulta) e rastrear evolução ao longo do tempo.
+model WeightRecord {
+  id             String    @id @default(cuid())
+  tenantId       String
+  patientId      String
+  consultationId String?   @unique      // preenchido quando pesagem ocorreu durante consulta
+  weight         Float
+  measuredAt     DateTime  @default(now())
+  measuredById   String?               // usuário que registrou o peso
+  notes          String?
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient      Patient       @relation(fields: [patientId], references: [id])
+  consultation Consultation? @relation(fields: [consultationId], references: [id])
+  measuredBy   User?         @relation(fields: [measuredById], references: [id])
+
+  @@index([tenantId, patientId, measuredAt])
+}
+
+// ─── Vaccines ─────────────────────────────────────────────────────
+model Vaccine {
+  id           String    @id @default(cuid())
+  tenantId     String
+  patientId    String
+  vetId        String
+  name         String
+  manufacturer String?
+  lot          String?
+  dose         String
+  appliedAt    DateTime
+  nextDoseAt   DateTime?
+  reminderSent Boolean   @default(false)
+  notes        String?
+  active       Boolean   @default(true)   // soft delete — registros médicos não devem ser apagados
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id])
+  vet     User    @relation(fields: [vetId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, patientId])
+  @@index([tenantId, nextDoseAt, reminderSent])
+}
+
+// ─── Financial ────────────────────────────────────────────────────
+model Invoice {
+  id            String        @id @default(cuid())
+  tenantId      String
+  number        String
+  ownerId       String?
+  patientId     String?
+  appointmentId String?       @unique
+  subtotal      Float
+  discount      Float         @default(0)
+  total         Float
+  status        InvoiceStatus @default(PENDING)
+  paymentMethod PaymentMethod?
+  paidAt        DateTime?
+  dueDate       DateTime?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  owner           Owner?         @relation(fields: [ownerId], references: [id])
+  patient         Patient?       @relation(fields: [patientId], references: [id])
+  appointment     Appointment?   @relation(fields: [appointmentId], references: [id])
+  items           InvoiceItem[]
+  fiscalDocument  FiscalDocument?
+
+  @@unique([tenantId, number])
+  @@index([tenantId, status])
+  @@index([tenantId, paidAt])
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  productId   String?          // opcional — link ao produto/serviço do catálogo
+  description String
+  quantity    Float
+  unitPrice   Float
+  total       Float
+
+  invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id])
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  CANCELLED
+  OVERDUE
+}
+
+enum PaymentMethod {
+  CASH
+  CREDIT
+  DEBIT
+  PIX
+  TRANSFER
+}
+
+// ─── Products / Services ─────────────────────────────────────────
+model Product {
+  id          String      @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  category    String
+  price       Float
+  cost        Float?
+  stock       Int         @default(0)
+  unit        String      @default("un")
+  active      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoiceItems InvoiceItem[]
+}
+
+// ─── Internação Hospitalar ────────────────────────────────────────
+model Hospitalization {
+  id               String                  @id @default(cuid())
+  tenantId         String
+  patientId        String
+  responsibleVetId String
+  admittedAt       DateTime                @default(now())
+  dischargedAt     DateTime?
+  reason           String
+  severity         HospitalizationSeverity @default(MEDIUM)
+  room             String?                         // box / baia / sala de obs.
+  status           HospitalizationStatus   @default(ADMITTED)
+  notes            String?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  tenant         Tenant                        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient        Patient                       @relation(fields: [patientId], references: [id])
+  responsibleVet User                          @relation("HospResponsibleVet", fields: [responsibleVetId], references: [id])
+  evolutions     HospitalizationEvolution[]
+  prescriptions  HospitalizationPrescription[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, patientId])
+}
+
+enum HospitalizationStatus {
+  ADMITTED      // internado
+  OBSERVATION   // em observação
+  DISCHARGED    // alta
+  TRANSFERRED   // transferido
+}
+
+enum HospitalizationSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// Evolução clínica diária do paciente internado
+model HospitalizationEvolution {
+  id                String   @id @default(cuid())
+  hospitalizationId String
+  vetId             String
+  recordedAt        DateTime @default(now())
+  weight            Float?
+  temperature       Float?
+  heartRate         Int?
+  respiratoryRate   Int?
+  description       String   // observações clínicas do período
+
+  hospitalization Hospitalization @relation(fields: [hospitalizationId], references: [id], onDelete: Cascade)
+  vet             User            @relation("HospEvolutionVet", fields: [vetId], references: [id])
+}
+
+// Prescrição de medicamento durante internação
+model HospitalizationPrescription {
+  id                String    @id @default(cuid())
+  hospitalizationId String
+  medication        String
+  dosage            String
+  frequency         String
+  route             String?           // IV, IM, VO, SC
+  startAt           DateTime
+  endAt             DateTime?
+  notes             String?
+
+  hospitalization Hospitalization          @relation(fields: [hospitalizationId], references: [id], onDelete: Cascade)
+  applications    PrescriptionApplication[]
+}
+
+// Registro de cada aplicação de medicamento
+model PrescriptionApplication {
+  id             String   @id @default(cuid())
+  prescriptionId String
+  appliedAt      DateTime @default(now())
+  appliedById    String
+  notes          String?
+
+  prescription HospitalizationPrescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  appliedBy    User                        @relation("PrescApplicationVet", fields: [appliedById], references: [id])
+}
+
+// ─── Banho & Tosa ─────────────────────────────────────────────────
+// Pacote de sessões pré-pago: tutor compra N sessões e usa ao longo do tempo
+model GroomingPackage {
+  id            String    @id @default(cuid())
+  tenantId      String
+  patientId     String
+  name          String
+  totalSessions Int
+  usedSessions  Int       @default(0)
+  price         Float
+  paidAt        DateTime?
+  validUntil    DateTime?
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([tenantId, active])
+  @@index([tenantId, patientId])
+}
+
+// ─── Nota Fiscal Eletrônica ───────────────────────────────────────
+model FiscalDocument {
+  id           String               @id @default(cuid())
+  tenantId     String
+  invoiceId    String?              @unique
+  type         FiscalDocumentType
+  status       FiscalDocumentStatus @default(PENDING)
+  externalId   String?              // ID no provedor (Nuvem Fiscal)
+  number       String?              // número da nota
+  series       String?
+  accessKey    String?              // chave de acesso 44 dígitos (NF-e)
+  xmlUrl       String?
+  pdfUrl       String?
+  protocol     String?
+  issuedAt     DateTime?
+  cancelledAt  DateTime?
+  cancelReason String?
+  errorMessage String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice Invoice? @relation(fields: [invoiceId], references: [id])
+
+  @@index([tenantId, status])
+  @@index([tenantId, issuedAt])
+}
+
+enum FiscalDocumentType {
+  NFE   // Nota Fiscal de Produto
+  NFSE  // Nota Fiscal de Serviço
+}
+
+enum FiscalDocumentStatus {
+  PENDING
+  PROCESSING
+  AUTHORIZED
+  CANCELLED
+  REJECTED
+}
+
+// ─── Telemedicina ─────────────────────────────────────────────────
+model TeleconsultationRoom {
+  id            String                 @id @default(cuid())
+  tenantId      String
+  appointmentId String?                @unique
+  patientId     String
+  vetId         String
+  roomUrl       String                 // URL da sala (Daily.co)
+  dailyRoomName String                 @unique
+  status        TeleconsultationStatus @default(WAITING)
+  scheduledAt   DateTime
+  startedAt     DateTime?
+  endedAt       DateTime?
+  notes         String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient     Patient      @relation(fields: [patientId], references: [id])
+  vet         User         @relation("TeleconsultationVet", fields: [vetId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+
+  @@index([tenantId, status])
+  @@index([tenantId, scheduledAt])
+}
+
+enum TeleconsultationStatus {
+  WAITING
+  ACTIVE
+  ENDED
+  CANCELLED
+}
