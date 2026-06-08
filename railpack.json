@@ -1,0 +1,4 @@
+{
+  "buildCommand": "npm run build --workspace=packages/shared && npm run build --workspace=apps/api",
+  "startCommand": "cd apps/api && npx prisma migrate deploy && node dist/server.js"
+}
