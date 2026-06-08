@@ -26,7 +26,8 @@ export default defineConfig({
 
   // Sobe o dev server automaticamente ao rodar localmente
   webServer: process.env.CI ? undefined : {
-    command: 'npm run dev --workspace=apps/web',
+    // roda `next dev` dentro de apps/web (cwd padrão = dir do playwright.config.ts)
+    command: 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: true,
     timeout: 60000,
