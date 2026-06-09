@@ -208,10 +208,22 @@ export default function DashboardPage() {
           <div className="divide-y divide-gray-50">
             {!isLoading && data?.todaySchedule?.length === 0 && (
               <div className="flex flex-col items-center py-12 text-center">
-                <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mb-3">
-                  <Calendar className="w-5 h-5 text-gray-300" />
-                </div>
+                {/* Dog sleeping — SVG inline, sem dependência externa */}
+                <svg width="72" height="56" viewBox="0 0 72 56" fill="none" className="mb-3 opacity-50" aria-hidden>
+                  <ellipse cx="36" cy="42" rx="22" ry="12" fill="#e5e7eb"/>
+                  <circle cx="36" cy="24" r="14" fill="#f3f4f6"/>
+                  <ellipse cx="24" cy="13" rx="6" ry="9" transform="rotate(-15 24 13)" fill="#e5e7eb"/>
+                  <ellipse cx="48" cy="13" rx="6" ry="9" transform="rotate(15 48 13)" fill="#e5e7eb"/>
+                  {/* olhos fechados */}
+                  <path d="M29 25 Q32 23 34 25" stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round"/>
+                  <path d="M38 25 Q41 23 43 25" stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round"/>
+                  <ellipse cx="36" cy="29" rx="3" ry="2" fill="#9ca3af"/>
+                  <path d="M32 32 Q36 35 40 32" stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                  {/* rabo */}
+                  <path d="M57 42 Q66 35 63 28" stroke="#e5e7eb" strokeWidth="4" strokeLinecap="round"/>
+                </svg>
                 <p className="text-sm font-medium text-gray-400">Nenhum agendamento para hoje</p>
+                <p className="text-xs text-gray-300 mt-1">Que tal aproveitar para um cochilo? 😄</p>
                 <button onClick={() => router.push('/agenda?new=1')} className="mt-3 text-xs text-primary font-semibold hover:underline flex items-center gap-1">
                   <Plus className="w-3 h-3" /> Criar agendamento
                 </button>
@@ -259,7 +271,26 @@ export default function DashboardPage() {
               </div>
             ))}
             {data?.recentConsultations?.length === 0 && (
-              <p className="text-center text-gray-400 py-10 text-sm">Nenhuma consulta recente</p>
+              <div className="flex flex-col items-center py-10 text-center">
+                {/* Cat sitting — SVG inline */}
+                <svg width="52" height="52" viewBox="0 0 52 52" fill="none" className="mb-2 opacity-40" aria-hidden>
+                  <ellipse cx="26" cy="38" rx="16" ry="10" fill="#e5e7eb"/>
+                  <circle cx="26" cy="22" r="12" fill="#f3f4f6"/>
+                  {/* orelhas pontudas */}
+                  <polygon points="14,14 18,6 22,14" fill="#e5e7eb"/>
+                  <polygon points="30,14 34,6 38,14" fill="#e5e7eb"/>
+                  {/* olhos */}
+                  <ellipse cx="21" cy="22" rx="2.5" ry="3" fill="#9ca3af"/>
+                  <ellipse cx="31" cy="22" rx="2.5" ry="3" fill="#9ca3af"/>
+                  {/* bigodes */}
+                  <line x1="14" y1="27" x2="22" y2="26" stroke="#d1d5db" strokeWidth="1"/>
+                  <line x1="14" y1="29" x2="22" y2="28" stroke="#d1d5db" strokeWidth="1"/>
+                  <line x1="30" y1="26" x2="38" y2="27" stroke="#d1d5db" strokeWidth="1"/>
+                  <line x1="30" y1="28" x2="38" y2="29" stroke="#d1d5db" strokeWidth="1"/>
+                  <ellipse cx="26" cy="27" rx="2" ry="1.5" fill="#f9a8d4"/>
+                </svg>
+                <p className="text-sm text-gray-400">Nenhuma consulta recente</p>
+              </div>
             )}
             {data?.recentConsultations?.map((c: any) => (
               <div key={c.id} className="px-6 py-3 hover:bg-gray-50/80 transition-colors cursor-pointer group">

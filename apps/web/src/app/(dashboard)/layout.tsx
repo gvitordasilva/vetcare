@@ -49,6 +49,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // Restaurar estado colapsado
     const saved = localStorage.getItem('sidebar-collapsed')
     if (saved === 'true') setCollapsed(true)
+
+    // Tab title — lembrete carinhoso quando o veterinário sai da aba
+    const origTitle = document.title
+    let restoreTimer: ReturnType<typeof setTimeout> | undefined
+
+    const onVis = () => {
+      clearTimeout(restoreTimer)
+      if (document.hidden) {
+        document.title = '🐾 Seus pacientes te esperam...'
+      } else {
+        document.title = origTitle
+      }
+    }
+
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      clearTimeout(restoreTimer)
+      document.removeEventListener('visibilitychange', onVis)
+    }
   }, [])
 
   function toggleCollapse() {

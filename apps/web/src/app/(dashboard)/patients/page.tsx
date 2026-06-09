@@ -52,10 +52,44 @@ export default function PatientsPage() {
             <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
           </div>
         ) : data?.data?.length === 0 ? (
-          <div className="text-center py-20">
-            <PawPrint className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">Nenhum paciente encontrado</p>
-            <p className="text-gray-400 text-sm mt-1">Clique em "Novo Paciente" para cadastrar</p>
+          <div className="flex flex-col items-center py-20 text-center">
+            {/* Paw print decorativo + cão sentado */}
+            <svg width="88" height="80" viewBox="0 0 88 80" fill="none" className="mb-4 opacity-40" aria-hidden>
+              {/* Corpo */}
+              <ellipse cx="44" cy="60" rx="26" ry="16" fill="#d1fae5"/>
+              {/* Cabeça */}
+              <circle cx="44" cy="36" r="18" fill="#a7f3d0"/>
+              {/* Orelhas caídas */}
+              <ellipse cx="28" cy="24" rx="8" ry="13" transform="rotate(-20 28 24)" fill="#6ee7b7"/>
+              <ellipse cx="60" cy="24" rx="8" ry="13" transform="rotate(20 60 24)" fill="#6ee7b7"/>
+              {/* Olhos com brilho */}
+              <circle cx="37" cy="34" r="4" fill="#065f46"/>
+              <circle cx="51" cy="34" r="4" fill="#065f46"/>
+              <circle cx="38.5" cy="32.5" r="1.2" fill="white"/>
+              <circle cx="52.5" cy="32.5" r="1.2" fill="white"/>
+              {/* Nariz */}
+              <ellipse cx="44" cy="41" rx="3.5" ry="2.5" fill="#065f46"/>
+              {/* Língua */}
+              <ellipse cx="44" cy="46" rx="4" ry="5" fill="#f9a8d4"/>
+              <line x1="44" y1="44" x2="44" y2="51" stroke="#f472b6" strokeWidth="1"/>
+              {/* Pata comemorativa */}
+              <ellipse cx="24" cy="72" rx="7" ry="5" fill="#6ee7b7"/>
+              <ellipse cx="17" cy="66" rx="4" ry="5" fill="#6ee7b7"/>
+              <ellipse cx="22" cy="63" rx="4" ry="5" fill="#6ee7b7"/>
+              <ellipse cx="28" cy="63" rx="4" ry="5" fill="#6ee7b7"/>
+            </svg>
+            <p className="text-gray-600 font-semibold">Ainda sem pacientes por aqui 🐾</p>
+            <p className="text-gray-400 text-sm mt-1 max-w-xs">
+              {search ? `Nenhum resultado para "${search}"` : 'Cadastre seu primeiro paciente e comece a atender!'}
+            </p>
+            {!search && (
+              <button
+                onClick={() => setNewPatientOpen(true)}
+                className="mt-5 flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary/90 transition shadow-sm hover:shadow-primary/20 hover:shadow-md"
+              >
+                <Plus className="w-4 h-4" /> Cadastrar primeiro paciente
+              </button>
+            )}
           </div>
         ) : (
           <table className="w-full">
