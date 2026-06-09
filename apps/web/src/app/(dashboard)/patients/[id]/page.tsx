@@ -6,7 +6,8 @@ import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { patientsApi } from '@/lib/api'
 import { SPECIES_LABELS, SPECIES_EMOJIS, formatDate, formatDateTime } from '@/lib/utils'
-import { ArrowLeft, Phone, Mail, Syringe, ClipboardList, Calendar, Weight, Camera, Loader2 } from 'lucide-react'
+import { ArrowLeft, Phone, Mail, Syringe, ClipboardList, Calendar, Weight, Camera, Loader2, Plus } from 'lucide-react'
+import NewConsultationDialog from '@/components/consultations/NewConsultationDialog'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
@@ -16,6 +17,7 @@ export default function PatientDetailPage() {
   const qc = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploadError, setUploadError] = useState('')
+  const [consultationOpen, setConsultationOpen] = useState(false)
 
   const { data: patient, isLoading } = useQuery({
     queryKey: ['patient', id],
@@ -185,29 +187,47 @@ export default function PatientDetailPage() {
 
       {/* Consultation history */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-        <div className="p-6 border-b border-gray-100">
+        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-semibold text-gray-900 flex items-center gap-2">
             <ClipboardList className="w-4 h-4 text-primary" /> Histórico de Consultas
           </h2>
+          <button
+            onClick={() => setConsultationOpen(true)}
+            className="flex items-center gap-1.5 bg-primary text-white px-3 py-2 rounded-xl text-xs font-bold hover:bg-primary/90 transition hover:shadow-md hover:shadow-primary/20"
+          >
+            <Plus className="w-3.5 h-3.5" /> Nova Consulta
+          </button>
         </div>
         <div className="divide-y divide-gray-50">
           {patient.consultations?.length === 0 && (
             <p className="text-center text-gray-400 py-10 text-sm">Nenhuma consulta registrada</p>
           )}
           {patient.consultations?.map((c: any) => (
-            <div key={c.id} className="px-6 py-4">
+            <div key={c.id} className="px-6 py-4 hover:bg-gray-50/80 transition-colors">
               <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-medium text-gray-900">{c.diagnosis}</p>
-                  <p className="text-sm text-gray-500 mt-0.5">{c.treatment}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900">{c.diagnosis}</p>
+                  <p className="text-sm text-gray-500 mt-0.5 leading-relaxed">{c.treatment}</p>
                   <p className="text-xs text-gray-400 mt-1">Dr(a). {c.vet.name} · {formatDate(c.date)}</p>
+                  {c.prescriptions?.length > 0 && (
+                    <p className="text-xs text-purple-600 mt-1">
+                      💊 {c.prescriptions.length} prescrição(ões): {c.prescriptions.map((p: any) => p.medication).join(', ')}
+                    </p>
+                  )}
                 </div>
-                {c.weight && <span className="text-sm text-gray-400 flex-shrink-0">{c.weight} kg</span>}
+                {c.weight && <span className="text-sm text-gray-400 flex-shrink-0 ml-3">{c.weight} kg</span>}
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      <NewConsultationDialog
+        open={consultationOpen}
+        onClose={() => setConsultationOpen(false)}
+        patientId={patient.id}
+        patientName={patient.name}
+      />
     </div>
   )
 }
