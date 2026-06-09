@@ -1,118 +1,186 @@
-import {
-  ClipboardList, Calendar, DollarSign, Mic2,
-  Video, BedDouble, Scissors, FileText,
-  BarChart3, Bell,
-} from 'lucide-react'
+import { ClipboardList, Calendar, DollarSign, Mic2, Video, BedDouble, Scissors, FileText, BarChart3, Bell, Zap, Shield } from 'lucide-react'
 
-const features = [
+/* ── Bento grid — each item defines its own "span" ──────────────── */
+const FEATURES = [
   {
-    icon: ClipboardList,
-    title: 'Prontuário Eletrônico',
-    description: 'Histórico completo do paciente, anamnese, exames e prescrições em um clique. Nunca perca um detalhe.',
-    color: 'bg-blue-50 text-blue-600',
-    badge: null,
-  },
-  {
-    icon: Calendar,
-    title: 'Agenda Inteligente',
-    description: 'Agendamento online com confirmação automática por WhatsApp. Reduza faltas em até 40%.',
-    color: 'bg-green-50 text-green-600',
-    badge: null,
-  },
-  {
+    id: 'ai-scribe',
     icon: Mic2,
     title: 'AI Scribe',
-    description: 'IA transcreve a consulta automaticamente e preenche o prontuário. Foque no animal, não no teclado.',
-    color: 'bg-purple-50 text-purple-600',
-    badge: 'Novidade',
+    description: 'A IA transcreve a consulta em tempo real e preenche o prontuário automaticamente. Foque no animal, não no teclado.',
+    badge: 'IA Nativa',
+    badgeColor: 'bg-purple-500',
+    col: 'md:col-span-2',
+    row: '',
+    accent: 'from-purple-500/10 to-purple-900/5',
+    border: 'border-purple-500/20',
+    iconBg: 'bg-purple-500/10',
+    iconColor: 'text-purple-400',
+    large: true,
   },
   {
+    id: 'prontuario',
+    icon: ClipboardList,
+    title: 'Prontuário Eletrônico',
+    description: 'Histórico completo, anamnese, exames e prescrições.',
+    badge: null, badgeColor: '', col: '', row: '',
+    accent: 'from-blue-500/10 to-blue-900/5',
+    border: 'border-blue-500/20',
+    iconBg: 'bg-blue-500/10',
+    iconColor: 'text-blue-400',
+    large: false,
+  },
+  {
+    id: 'agenda',
+    icon: Calendar,
+    title: 'Agenda Inteligente',
+    description: 'Agendamento online com confirmação automática.',
+    badge: null, badgeColor: '', col: '', row: '',
+    accent: 'from-green-500/10 to-green-900/5',
+    border: 'border-green-500/20',
+    iconBg: 'bg-green-500/10',
+    iconColor: 'text-green-400',
+    large: false,
+  },
+  {
+    id: 'financeiro',
     icon: DollarSign,
     title: 'Financeiro Completo',
-    description: 'Fluxo de caixa, contas a receber, comissões de veterinários e relatórios de lucro por período.',
-    color: 'bg-amber-50 text-amber-600',
-    badge: null,
+    description: 'Fluxo de caixa, comissões e relatórios de lucro. Integrado com Asaas para cobranças automáticas.',
+    badge: null, badgeColor: '', col: 'md:col-span-2', row: '',
+    accent: 'from-amber-500/10 to-amber-900/5',
+    border: 'border-amber-500/20',
+    iconBg: 'bg-amber-500/10',
+    iconColor: 'text-amber-400',
+    large: false,
   },
   {
+    id: 'nfe',
     icon: FileText,
     title: 'NF-e / NFS-e',
-    description: 'Emissão automática de nota fiscal ao concluir atendimento. Integração com todas as prefeituras.',
-    color: 'bg-red-50 text-red-600',
-    badge: null,
+    description: 'Emissão automática ao concluir atendimento.',
+    badge: null, badgeColor: '', col: '', row: '',
+    accent: 'from-red-500/10 to-red-900/5',
+    border: 'border-red-500/20',
+    iconBg: 'bg-red-500/10',
+    iconColor: 'text-red-400',
+    large: false,
   },
   {
+    id: 'telemedicina',
     icon: Video,
     title: 'Telemedicina',
-    description: 'Consultas por vídeo diretamente no sistema, com link enviado ao tutor automaticamente.',
-    color: 'bg-cyan-50 text-cyan-600',
-    badge: null,
+    description: 'Consultas por vídeo direto no sistema. Link enviado ao tutor automaticamente.',
+    badge: null, badgeColor: '', col: '', row: '',
+    accent: 'from-cyan-500/10 to-cyan-900/5',
+    border: 'border-cyan-500/20',
+    iconBg: 'bg-cyan-500/10',
+    iconColor: 'text-cyan-400',
+    large: false,
   },
   {
-    icon: BedDouble,
-    title: 'Internação',
-    description: 'Controle de leitos, prescrições hospitalares e evolução clínica para animais internados.',
-    color: 'bg-indigo-50 text-indigo-600',
-    badge: null,
-  },
-  {
-    icon: Scissors,
-    title: 'Banho & Tosa',
-    description: 'Módulo completo para petshop integrado à clínica. Agendamentos e faturamento unificados.',
-    color: 'bg-pink-50 text-pink-600',
-    badge: null,
-  },
-  {
-    icon: Bell,
-    title: 'Lembretes Automáticos',
-    description: 'Notificações de vacinas, retornos e consultas enviadas ao tutor por email. Zero esquecimentos.',
-    color: 'bg-orange-50 text-orange-600',
-    badge: null,
-  },
-  {
+    id: 'relatorios',
     icon: BarChart3,
     title: 'Relatórios Avançados',
-    description: 'Dashboards com métricas de atendimento, receita, crescimento de pacientes e produtividade da equipe.',
-    color: 'bg-teal-50 text-teal-600',
-    badge: null,
+    description: 'Dashboards com métricas de atendimento, receita e produtividade — exportáveis em PDF com 1 clique.',
+    badge: null, badgeColor: '', col: 'md:col-span-2', row: '',
+    accent: 'from-teal-500/10 to-teal-900/5',
+    border: 'border-teal-500/20',
+    iconBg: 'bg-teal-500/10',
+    iconColor: 'text-teal-400',
+    large: false,
+  },
+  {
+    id: 'internacao',
+    icon: BedDouble,
+    title: 'Internação',
+    description: 'Controle de leitos e prescrições hospitalares.',
+    badge: null, badgeColor: '', col: '', row: '',
+    accent: 'from-indigo-500/10 to-indigo-900/5',
+    border: 'border-indigo-500/20',
+    iconBg: 'bg-indigo-500/10',
+    iconColor: 'text-indigo-400',
+    large: false,
+  },
+  {
+    id: 'lgpd',
+    icon: Shield,
+    title: 'LGPD & Segurança',
+    description: 'Dados armazenados no Brasil. Backups automáticos, criptografia em repouso e 2FA.',
+    badge: 'Brasil', badgeColor: 'bg-green-600',
+    col: '', row: '',
+    accent: 'from-green-500/10 to-green-900/5',
+    border: 'border-green-500/20',
+    iconBg: 'bg-green-500/10',
+    iconColor: 'text-green-400',
+    large: false,
+  },
+  {
+    id: 'lembretes',
+    icon: Bell,
+    title: 'Lembretes Automáticos',
+    description: 'Notificações de vacinas e retornos por email.',
+    badge: null, badgeColor: '', col: '', row: '',
+    accent: 'from-orange-500/10 to-orange-900/5',
+    border: 'border-orange-500/20',
+    iconBg: 'bg-orange-500/10',
+    iconColor: 'text-orange-400',
+    large: false,
   },
 ]
 
+function BentoCard({ feature }: { feature: typeof FEATURES[0] }) {
+  const { icon: Icon, title, description, badge, badgeColor, col, accent, border, iconBg, iconColor, large } = feature
+  return (
+    <div
+      className={`group relative rounded-3xl p-6 border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-default overflow-hidden bg-gradient-to-br ${accent} ${border} ${col}`}
+      style={{ borderWidth: 1 }}
+    >
+      {/* Glow on hover */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.04), transparent 70%)' }} />
+
+      {badge && (
+        <span className={`absolute top-4 right-4 ${badgeColor} text-white text-[10px] font-bold px-2.5 py-1 rounded-full`}>
+          {badge}
+        </span>
+      )}
+
+      <div className={`${iconBg} rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 ${large ? 'w-14 h-14' : 'w-11 h-11'}`}>
+        <Icon className={`${iconColor} ${large ? 'w-7 h-7' : 'w-5 h-5'}`} />
+      </div>
+
+      <h3 className={`font-bold text-white mb-2 ${large ? 'text-xl' : 'text-sm'}`}>{title}</h3>
+      <p className={`text-white/50 leading-relaxed ${large ? 'text-sm' : 'text-xs'}`}>{description}</p>
+
+      {large && (
+        <div className="mt-6 flex items-center gap-2 text-xs font-semibold text-purple-400">
+          <Zap className="w-3.5 h-3.5" />
+          Economize até 2h por dia
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function FeaturesSection() {
   return (
-    <section id="funcionalidades" className="py-24 bg-white">
+    <section id="funcionalidades" className="py-24" style={{ background: '#030d06' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 text-green-600 text-sm font-semibold bg-green-50 px-4 py-2 rounded-full mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold mb-4" style={{ background: 'rgba(22,163,74,0.12)', border: '1px solid rgba(22,163,74,0.25)', color: '#4ade80' }}>
             Tudo que sua clínica precisa
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">
             Uma plataforma, todas as funcionalidades
           </h2>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-            Substitua 5 sistemas diferentes por um único — desenvolvido especificamente para clínicas veterinárias brasileiras.
+          <p className="text-lg max-w-xl mx-auto" style={{ color: 'rgba(255,255,255,0.5)' }}>
+            Substitua 5 sistemas diferentes por um único — feito para veterinários brasileiros.
           </p>
         </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
-          {features.map((feature) => (
-            <div
-              key={feature.title}
-              className="group relative bg-white border border-gray-100 rounded-2xl p-5 hover:border-green-200 hover:shadow-lg hover:shadow-green-50 transition-all duration-200 cursor-default"
-            >
-              {feature.badge && (
-                <span className="absolute -top-2.5 right-4 bg-green-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
-                  {feature.badge}
-                </span>
-              )}
-              <div className={`w-11 h-11 rounded-xl ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                <feature.icon className="w-5 h-5" />
-              </div>
-              <h3 className="font-semibold text-gray-900 text-sm mb-1.5">{feature.title}</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">{feature.description}</p>
-            </div>
-          ))}
+        {/* Bento grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {FEATURES.map((f) => <BentoCard key={f.id} feature={f} />)}
         </div>
       </div>
     </section>

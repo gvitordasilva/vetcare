@@ -8,21 +8,21 @@ import TestimonialsSection from './TestimonialsSection'
 import CtaSection from './CtaSection'
 import MarketingFooter from './MarketingFooter'
 
-// Barra de social proof / parceiros
 function SocialProofBar() {
+  const stats = [
+    { value: '200+', label: 'clínicas ativas' },
+    { value: '50.000+', label: 'pacientes gerenciados' },
+    { value: '5 estados', label: 'do Brasil' },
+    { value: '98%', label: 'de satisfação' },
+  ]
   return (
-    <div className="bg-white border-y border-gray-100 py-6">
+    <div style={{ background: '#030d06', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)' }} className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16 text-center">
-          {[
-            { value: '200+', label: 'clínicas ativas' },
-            { value: '50.000+', label: 'pacientes gerenciados' },
-            { value: '5 estados', label: 'do Brasil' },
-            { value: '98%', label: 'de satisfação' },
-          ].map((item) => (
-            <div key={item.label}>
-              <span className="text-2xl font-black text-gray-900">{item.value}</span>
-              <span className="text-sm text-gray-500 ml-2">{item.label}</span>
+          {stats.map((s) => (
+            <div key={s.label}>
+              <span className="text-2xl font-black text-white">{s.value}</span>
+              <span className="text-sm ml-2" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</span>
             </div>
           ))}
         </div>
@@ -33,12 +33,17 @@ function SocialProofBar() {
 
 export default function LandingPage() {
   return (
-    <>
+    <div style={{ background: '#fff' }}>
       <MarketingHeader />
       <main>
-        <HeroSection />
-        <SocialProofBar />
-        <FeaturesSection />
+        {/* Dark sections */}
+        <div style={{ background: '#020a05' }}>
+          <HeroSection />
+          <SocialProofBar />
+          <FeaturesSection />
+        </div>
+
+        {/* Light sections */}
         <VideoSection />
         <HowItWorksSection />
         <PricingPreview />
@@ -46,6 +51,6 @@ export default function LandingPage() {
         <CtaSection />
       </main>
       <MarketingFooter />
-    </>
+    </div>
   )
 }
