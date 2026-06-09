@@ -143,20 +143,14 @@ export default function BillingPage() {
             )}
           </div>
 
-          {sub.status !== 'CANCELLED' && (
-            <div className="mt-4 pt-4 border-t border-gray-100 text-sm text-gray-500">
-              {sub.status === 'ACTIVE' && (
-                <p>Próxima renovação: <strong className="text-gray-900">
-                  {new Date(sub.currentPeriodEnd).toLocaleDateString('pt-BR')}
-                </strong></p>
-              )}
-              {sub.status === 'CANCELLED' && (
-                <p>Acesso até: <strong className="text-gray-900">
-                  {new Date(sub.currentPeriodEnd).toLocaleDateString('pt-BR')}
-                </strong></p>
-              )}
-            </div>
-          )}
+          <div className="mt-4 pt-4 border-t border-gray-100 text-sm text-gray-500">
+            <p>
+              {sub.status === 'CANCELLED' ? 'Acesso até:' : 'Próxima renovação:'}{' '}
+              <strong className="text-gray-900">
+                {new Date(sub.currentPeriodEnd).toLocaleDateString('pt-BR')}
+              </strong>
+            </p>
+          </div>
         </div>
       )}
 
