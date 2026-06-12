@@ -45,3 +45,6 @@ Thumbs.db
 playwright-report/
 test-results/
 .playwright/
+
+# Downloads brutos de modelos 3D (so os .glb otimizados sao commitados)
+apps/web/public/models/src/

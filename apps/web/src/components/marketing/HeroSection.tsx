@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowRight, CheckCircle2, Star, Calendar, Users, DollarSign, Activity, FileText, TrendingUp } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import useTilt from './useTilt'
+import Hero3D from './hero3d/Hero3D'
 
 /* ── Dados por espécie ─────────────────────────────────────────────── */
 const SPECIES = [
@@ -513,9 +514,14 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* ── Lado direito: mockup com tilt ───────────────────────── */}
+          {/* ── Lado direito: animal 3D (desktop+GPU) ou mockup ─────── */}
           <div className="hero-rise flex justify-center lg:justify-end" style={{ animationDelay: '400ms' }}>
-            <DashboardMockup species={species} />
+            <div className="w-full max-w-xl">
+              <Hero3D
+                speciesId={species.id}
+                fallback={<DashboardMockup species={species} />}
+              />
+            </div>
           </div>
 
         </div>

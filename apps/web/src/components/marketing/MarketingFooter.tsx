@@ -96,6 +96,21 @@ export default function MarketingFooter() {
             <span>para veterinários brasileiros</span>
           </div>
         </div>
+
+        {/* Atribuição CC BY dos modelos 3D */}
+        <p className="pt-4 text-[11px] text-gray-700 text-center sm:text-left">
+          Modelos 3D: cavalo por{' '}
+          <a href="https://sketchfab.com/3d-models/free-horse-3d-model-e4ebd72418bb4256b04d0adca6324cdd"
+            target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-500 transition-colors">
+            DinoReplicas
+          </a>{' '}
+          (CC BY 4.0) · papagaio do projeto{' '}
+          <a href="https://github.com/mrdoob/three.js" target="_blank" rel="noopener noreferrer"
+            className="underline hover:text-gray-500 transition-colors">
+            three.js
+          </a>{' '}
+          (MIT)
+        </p>
       </div>
     </footer>
   )
