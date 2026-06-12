@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { ArrowRight, CheckCircle2, Star, Calendar, Users, DollarSign, Activity, FileText, TrendingUp } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 /* ── Dados por espécie ─────────────────────────────────────────────── */
 const SPECIES = [
@@ -54,6 +54,194 @@ const SPECIES = [
 
 type SpeciesItem = typeof SPECIES[number]
 
+/* ── Headline com split-text (palavra por palavra) ─────────────────── */
+// Decisão de design: fade-up sem máscara (estilo Linear) — translateY+opacity
+// apenas, sem blur/clip, para manter paint barato e evitar corte de descendentes.
+const HEADLINE_WORDS: { t: string; grad?: boolean }[] = [
+  { t: 'Gestão' },
+  { t: 'veterinária', grad: true },
+  { t: 'que' },
+  { t: 'seus' },
+  { t: 'concorrentes' },
+  { t: 'não' },
+  { t: 'têm' },
+]
+
+function AnimatedHeadline() {
+  return (
+    <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight mb-6">
+      {HEADLINE_WORDS.map((w, i) => (
+        <span key={i}>
+          <span
+            className="hero-word inline-block"
+            style={{ animationDelay: `${120 + i * 70}ms` }}
+          >
+            {w.grad ? (
+              <span
+                className="text-transparent bg-clip-text"
+                style={{ backgroundImage: 'linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #0d9488 100%)' }}
+              >
+                {w.t}
+              </span>
+            ) : (
+              w.t
+            )}
+          </span>
+          {i < HEADLINE_WORDS.length - 1 ? ' ' : null}
+        </span>
+      ))}
+    </h1>
+  )
+}
+
+/* ── Partículas em canvas (leve, sem lib) ──────────────────────────── */
+// ~55 pontos verdes com drift ascendente + twinkle. Pausa fora do viewport
+// (IntersectionObserver) e com a aba oculta. Desativada em touch e
+// prefers-reduced-motion — nesses casos o canvas fica vazio (custo zero).
+function ParticleField() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (!window.matchMedia('(pointer: fine)').matches) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const DPR = Math.min(window.devicePixelRatio || 1, 2)
+    let W = 0, H = 0
+    let raf = 0
+    let running = false
+    let last = performance.now()
+
+    const resize = () => {
+      W = canvas.clientWidth
+      H = canvas.clientHeight
+      canvas.width = W * DPR
+      canvas.height = H * DPR
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0)
+    }
+    resize()
+
+    const ps = Array.from({ length: 55 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: 0.6 + Math.random() * 1.8,
+      vy: 0.08 + Math.random() * 0.25,
+      vx: (Math.random() - 0.5) * 0.12,
+      tw: Math.random() * Math.PI * 2,
+      ts: 0.4 + Math.random() * 1.2,
+    }))
+
+    const tick = (now: number) => {
+      if (!running) return
+      const dt = Math.min((now - last) / 16.67, 3)
+      last = now
+      ctx.clearRect(0, 0, W, H)
+      for (const p of ps) {
+        p.y -= p.vy * dt
+        p.x += p.vx * dt
+        p.tw += 0.02 * p.ts * dt
+        if (p.y < -4) { p.y = H + 4; p.x = Math.random() * W }
+        if (p.x < -4) p.x = W + 4
+        else if (p.x > W + 4) p.x = -4
+        const a = 0.25 + 0.45 * (0.5 + 0.5 * Math.sin(p.tw))
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(74,222,128,${(a * 0.5).toFixed(3)})`
+        ctx.fill()
+      }
+      raf = requestAnimationFrame(tick)
+    }
+
+    const start = () => {
+      if (running) return
+      running = true
+      last = performance.now()
+      raf = requestAnimationFrame(tick)
+    }
+    const stop = () => {
+      running = false
+      cancelAnimationFrame(raf)
+    }
+
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !document.hidden) start()
+      else stop()
+    })
+    io.observe(canvas)
+
+    const onVis = () => { document.hidden ? stop() : start() }
+    document.addEventListener('visibilitychange', onVis)
+    window.addEventListener('resize', resize)
+
+    return () => {
+      stop()
+      io.disconnect()
+      document.removeEventListener('visibilitychange', onVis)
+      window.removeEventListener('resize', resize)
+    }
+  }, [])
+
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden />
+}
+
+/* ── Tilt 3D com lerp ──────────────────────────────────────────────── */
+// rotateX/Y alvo definidos no mousemove; interpolação (fator 0.08) roda em
+// rAF até convergir — sem listener de rAF permanente quando parado.
+function useTilt(maxRotX = 5, maxRotY = 7) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (!window.matchMedia('(pointer: fine)').matches) return
+
+    let raf = 0
+    let tx = 0, ty = 0   // alvo (rotateY, rotateX)
+    let cx = 0, cy = 0   // atual
+    let hovering = false
+
+    const loop = () => {
+      cx += (tx - cx) * 0.08
+      cy += (ty - cy) * 0.08
+      el.style.transform = `perspective(1200px) rotateX(${cy.toFixed(2)}deg) rotateY(${cx.toFixed(2)}deg)`
+      if (hovering || Math.abs(tx - cx) > 0.02 || Math.abs(ty - cy) > 0.02) {
+        raf = requestAnimationFrame(loop)
+      } else {
+        raf = 0
+      }
+    }
+    const ensureLoop = () => { if (!raf) raf = requestAnimationFrame(loop) }
+
+    const onMove = (e: MouseEvent) => {
+      const r = el.getBoundingClientRect()
+      const px = (e.clientX - r.left) / r.width - 0.5
+      const py = (e.clientY - r.top) / r.height - 0.5
+      tx = px * maxRotY * 2
+      ty = -py * maxRotX * 2
+      hovering = true
+      ensureLoop()
+    }
+    const onLeave = () => {
+      tx = 0; ty = 0; hovering = false
+      ensureLoop()
+    }
+
+    el.addEventListener('mousemove', onMove)
+    el.addEventListener('mouseleave', onLeave)
+    return () => {
+      cancelAnimationFrame(raf)
+      el.removeEventListener('mousemove', onMove)
+      el.removeEventListener('mouseleave', onLeave)
+    }
+  }, [maxRotX, maxRotY])
+
+  return ref
+}
+
 /* ── Aurora background ─────────────────────────────────────────────── */
 function AuroraBackground() {
   return (
@@ -72,144 +260,143 @@ function AuroraBackground() {
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)',
           backgroundSize: '60px 60px',
         }} />
-      <style>{`
-        @keyframes aurora1 { 0%,100%{transform:translate(0,0) scale(1)} 25%{transform:translate(80px,-60px) scale(1.1)} 50%{transform:translate(-40px,80px) scale(0.95)} 75%{transform:translate(60px,40px) scale(1.05)} }
-        @keyframes aurora2 { 0%,100%{transform:translate(0,0) scale(1)} 30%{transform:translate(-90px,50px) scale(1.08)} 60%{transform:translate(60px,-70px) scale(0.92)} }
-        @keyframes aurora3 { 0%,100%{transform:translate(0,0) scale(1)} 40%{transform:translate(70px,-40px) scale(1.12)} 70%{transform:translate(-50px,60px) scale(0.9)} }
-        @keyframes aurora4 { 0%,100%{transform:translate(0,0) scale(1)} 35%{transform:translate(-60px,-80px) scale(1.06)} 65%{transform:translate(80px,50px) scale(0.94)} }
-      `}</style>
     </div>
   )
 }
 
-/* ── Dashboard mockup ─────────────────────────────────────────────── */
+/* ── Dashboard mockup (com tilt 3D) ────────────────────────────────── */
 function DashboardMockup({ species }: { species: SpeciesItem }) {
+  const tiltRef = useTilt()
+
   return (
     <div className="relative w-full max-w-xl mx-auto lg:mx-0">
-      {/* Glow dinâmico por espécie */}
+      {/* Glow dinâmico por espécie — fora do tilt para não "entortar" */}
       <div
         className="absolute -inset-8 rounded-3xl blur-3xl pointer-events-none transition-all duration-1000"
         style={{ background: species.glow }}
       />
 
-      {/* Browser shell */}
-      <div
-        className="relative rounded-2xl overflow-hidden border transition-shadow duration-700"
-        style={{
-          borderColor: 'rgba(255,255,255,0.1)',
-          background: 'rgba(255,255,255,0.04)',
-          backdropFilter: 'blur(12px)',
-        }}
-      >
-        {/* Chrome bar */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b"
-          style={{ borderColor: 'rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.3)' }}>
-          <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-red-500/80" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-            <div className="w-3 h-3 rounded-full bg-green-500/80" />
-          </div>
-          <div className="flex-1 rounded-lg px-3 py-1 text-xs ml-2"
-            style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }}>
-            app.vetcare.com.br/dashboard
-          </div>
-        </div>
+      {/* Wrapper do tilt — preserve-3d permite badges com translateZ */}
+      <div ref={tiltRef} className="relative" style={{ transformStyle: 'preserve-3d', willChange: 'transform' }}>
 
-        {/* App body */}
-        <div className="p-4" style={{ background: 'rgba(2,10,5,0.82)' }}>
-          {/* Clinic header */}
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-xs font-medium text-white/70">Clínica Pet Feliz</span>
-            <span className="ml-auto text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>Hoje, 14:32</span>
-          </div>
-
-          {/* KPI cards */}
-          <div className="grid grid-cols-3 gap-2 mb-3">
-            {[
-              { icon: Calendar,   label: 'Consultas', value: '12',    color: 'text-blue-400',   bg: 'rgba(59,130,246,0.12)' },
-              { icon: Users,      label: 'Pacientes', value: '248',   color: 'text-green-400',  bg: 'rgba(34,197,94,0.12)'  },
-              { icon: DollarSign, label: 'Receita',   value: 'R$8.4k', color: 'text-purple-400', bg: 'rgba(168,85,247,0.12)' },
-            ].map((s) => (
-              <div key={s.label} className="rounded-xl p-3"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-1.5" style={{ background: s.bg }}>
-                  <s.icon className={`w-3.5 h-3.5 ${s.color}`} />
-                </div>
-                <div className="text-sm font-bold text-white">{s.value}</div>
-                <div className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Mini chart — barra de destaque muda de cor com a espécie */}
-          <div className="rounded-xl p-3 mb-3"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-medium text-white/70">Receita — 7 dias</span>
-              <TrendingUp className="w-3.5 h-3.5 text-green-400" />
+        {/* Browser shell */}
+        <div
+          className="relative rounded-2xl overflow-hidden border"
+          style={{
+            borderColor: 'rgba(255,255,255,0.1)',
+            background: 'rgba(255,255,255,0.04)',
+            backdropFilter: 'blur(12px)',
+          }}
+        >
+          {/* Chrome bar */}
+          <div className="flex items-center gap-2 px-4 py-3 border-b"
+            style={{ borderColor: 'rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.3)' }}>
+            <div className="flex gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-red-500/80" />
+              <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+              <div className="w-3 h-3 rounded-full bg-green-500/80" />
             </div>
-            <div className="flex items-end gap-1 h-12">
-              {[35, 60, 45, 75, 50, 90, 68].map((h, i) => (
-                <div key={i} className="flex-1 rounded-t-sm transition-colors duration-700"
-                  style={{ height: `${h}%`, background: i === 5 ? species.activeColor : 'rgba(34,197,94,0.22)' }} />
+            <div className="flex-1 rounded-lg px-3 py-1 text-xs ml-2"
+              style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }}>
+              app.vetcare.com.br/dashboard
+            </div>
+          </div>
+
+          {/* App body */}
+          <div className="p-4" style={{ background: 'rgba(2,10,5,0.82)' }}>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <span className="text-xs font-medium text-white/70">Clínica Pet Feliz</span>
+              <span className="ml-auto text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>Hoje, 14:32</span>
+            </div>
+
+            {/* KPI cards */}
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              {[
+                { icon: Calendar,   label: 'Consultas', value: '12',     color: 'text-blue-400',   bg: 'rgba(59,130,246,0.12)' },
+                { icon: Users,      label: 'Pacientes', value: '248',    color: 'text-green-400',  bg: 'rgba(34,197,94,0.12)'  },
+                { icon: DollarSign, label: 'Receita',   value: 'R$8.4k', color: 'text-purple-400', bg: 'rgba(168,85,247,0.12)' },
+              ].map((s) => (
+                <div key={s.label} className="rounded-xl p-3"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-1.5" style={{ background: s.bg }}>
+                    <s.icon className={`w-3.5 h-3.5 ${s.color}`} />
+                  </div>
+                  <div className="text-sm font-bold text-white tabular-nums">{s.value}</div>
+                  <div className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Mini chart */}
+            <div className="rounded-xl p-3 mb-3"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-medium text-white/70">Receita — 7 dias</span>
+                <TrendingUp className="w-3.5 h-3.5 text-green-400" />
+              </div>
+              <div className="flex items-end gap-1 h-12">
+                {[35, 60, 45, 75, 50, 90, 68].map((h, i) => (
+                  <div key={i} className="flex-1 rounded-t-sm transition-colors duration-700"
+                    style={{ height: `${h}%`, background: i === 5 ? species.activeColor : 'rgba(34,197,94,0.22)' }} />
+                ))}
+              </div>
+            </div>
+
+            {/* Agenda — pets mudam com a espécie */}
+            <div className="rounded-xl p-3"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="text-xs font-semibold text-white/70 mb-2.5 flex items-center gap-1.5">
+                <Calendar className="w-3 h-3 text-green-400" />
+                Próximas consultas
+              </div>
+              {species.appointments.map((a, i) => (
+                <div key={a.pet}
+                  className="flex items-center gap-2.5 py-1.5"
+                  style={{ borderBottom: i === 0 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-base flex-shrink-0"
+                    style={{ background: 'rgba(255,255,255,0.08)' }}>
+                    {a.emoji}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-semibold text-white/90">{a.pet}</span>
+                    <span className="text-[10px] text-white/40"> · {a.breed}</span>
+                    <div className="text-[10px] text-white/35">{a.owner}</div>
+                  </div>
+                  <div className="text-xs font-bold flex-shrink-0 transition-colors duration-700"
+                    style={{ color: species.activeColor }}>
+                    {a.time}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
+        </div>
 
-          {/* Agenda — pets mudam com a espécie selecionada */}
-          <div className="rounded-xl p-3"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <div className="text-xs font-semibold text-white/70 mb-2.5 flex items-center gap-1.5">
-              <Calendar className="w-3 h-3 text-green-400" />
-              Próximas consultas
-            </div>
-            {species.appointments.map((a, i) => (
-              <div key={a.pet}
-                className="flex items-center gap-2.5 py-1.5"
-                style={{ borderBottom: i === 0 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                {/* Avatar com emoji do animal */}
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-base flex-shrink-0"
-                  style={{ background: 'rgba(255,255,255,0.08)' }}>
-                  {a.emoji}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs font-semibold text-white/90">{a.pet}</span>
-                  <span className="text-[10px] text-white/40"> · {a.breed}</span>
-                  <div className="text-[10px] text-white/35">{a.owner}</div>
-                </div>
-                <div className="text-xs font-bold flex-shrink-0 transition-colors duration-700"
-                  style={{ color: species.activeColor }}>
-                  {a.time}
-                </div>
-              </div>
-            ))}
+        {/* Badge AI Scribe — translateZ "salta" do plano no tilt */}
+        <div className="absolute -bottom-5 -left-5 px-4 py-3 rounded-2xl flex items-center gap-3 shadow-2xl"
+          style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.12)', transform: 'translateZ(50px)' }}>
+          <div className="w-9 h-9 rounded-xl bg-green-500/20 flex items-center justify-center">
+            <Activity className="w-4 h-4 text-green-400" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-white">AI Scribe ativo</div>
+            <div className="text-[10px] text-white/50">Transcrição automática</div>
           </div>
         </div>
-      </div>
 
-      {/* Floating badge — AI Scribe */}
-      <div className="absolute -bottom-5 -left-5 px-4 py-3 rounded-2xl flex items-center gap-3 shadow-2xl"
-        style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.12)' }}>
-        <div className="w-9 h-9 rounded-xl bg-green-500/20 flex items-center justify-center">
-          <Activity className="w-4 h-4 text-green-400" />
+        {/* Badge NF-e */}
+        <div className="absolute -top-5 -right-5 px-4 py-3 rounded-2xl flex items-center gap-3 shadow-2xl"
+          style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.12)', transform: 'translateZ(40px)' }}>
+          <div className="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center">
+            <FileText className="w-4 h-4 text-purple-400" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-white">NF-e emitida</div>
+            <div className="text-[10px] text-white/50">Automaticamente</div>
+          </div>
         </div>
-        <div>
-          <div className="text-xs font-bold text-white">AI Scribe ativo</div>
-          <div className="text-[10px] text-white/50">Transcrição automática</div>
-        </div>
-      </div>
 
-      {/* Floating badge — NF-e */}
-      <div className="absolute -top-5 -right-5 px-4 py-3 rounded-2xl flex items-center gap-3 shadow-2xl"
-        style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.12)' }}>
-        <div className="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center">
-          <FileText className="w-4 h-4 text-purple-400" />
-        </div>
-        <div>
-          <div className="text-xs font-bold text-white">NF-e emitida</div>
-          <div className="text-[10px] text-white/50">Automaticamente</div>
-        </div>
       </div>
     </div>
   )
@@ -217,12 +404,11 @@ function DashboardMockup({ species }: { species: SpeciesItem }) {
 
 /* ── Hero ─────────────────────────────────────────────────────────── */
 export default function HeroSection() {
-  const [activeIdx, setActiveIdx]     = useState(0)
-  const [autoRotate, setAutoRotate]   = useState(true)
+  const [activeIdx, setActiveIdx]   = useState(0)
+  const [autoRotate, setAutoRotate] = useState(true)
 
   const species = SPECIES[activeIdx]
 
-  /* Auto-rotaciona espécies a cada 3.5s; para quando usuário clica */
   useEffect(() => {
     if (!autoRotate) return
     const t = setInterval(() => setActiveIdx((i) => (i + 1) % SPECIES.length), 3500)
@@ -236,37 +422,72 @@ export default function HeroSection() {
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden pt-16">
+      <style>{`
+        @keyframes aurora1 { 0%,100%{transform:translate(0,0) scale(1)} 25%{transform:translate(80px,-60px) scale(1.1)} 50%{transform:translate(-40px,80px) scale(0.95)} 75%{transform:translate(60px,40px) scale(1.05)} }
+        @keyframes aurora2 { 0%,100%{transform:translate(0,0) scale(1)} 30%{transform:translate(-90px,50px) scale(1.08)} 60%{transform:translate(60px,-70px) scale(0.92)} }
+        @keyframes aurora3 { 0%,100%{transform:translate(0,0) scale(1)} 40%{transform:translate(70px,-40px) scale(1.12)} 70%{transform:translate(-50px,60px) scale(0.9)} }
+        @keyframes aurora4 { 0%,100%{transform:translate(0,0) scale(1)} 35%{transform:translate(-60px,-80px) scale(1.06)} 65%{transform:translate(80px,50px) scale(0.94)} }
+
+        @keyframes heroWordIn {
+          from { opacity: 0; transform: translateY(18px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .hero-word {
+          opacity: 0;
+          animation: heroWordIn 0.65s cubic-bezier(0.22,1,0.36,1) forwards;
+          will-change: transform;
+        }
+
+        @keyframes heroRiseIn {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .hero-rise {
+          opacity: 0;
+          animation: heroRiseIn 0.6s cubic-bezier(0.22,1,0.36,1) forwards;
+        }
+
+        @keyframes badgePulseRing {
+          0%   { box-shadow: 0 0 0 0 rgba(74,222,128,0.35); }
+          70%  { box-shadow: 0 0 0 8px rgba(74,222,128,0); }
+          100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
+        }
+        .badge-pulse { animation: badgePulseRing 2.4s ease-out infinite; }
+
+        @keyframes speciesBounce {
+          0%,100% { transform: translateY(0); }
+          50%      { transform: translateY(-3px); }
+        }
+        .species-active-emoji { display: inline-block; animation: speciesBounce 1.2s ease-in-out infinite; }
+
+        @media (prefers-reduced-motion: reduce) {
+          .hero-word, .hero-rise { animation: none; opacity: 1; }
+          .badge-pulse, .species-active-emoji { animation: none; }
+        }
+      `}</style>
+
       <AuroraBackground />
+      <ParticleField />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
           {/* ── Lado esquerdo ──────────────────────────────────────── */}
           <div>
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 text-xs font-semibold"
-              style={{ background: 'rgba(22,163,74,0.15)', border: '1px solid rgba(22,163,74,0.3)', color: '#4ade80' }}>
+            {/* Badge com pulse ring */}
+            <div className="hero-rise inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 text-xs font-semibold badge-pulse"
+              style={{ background: 'rgba(22,163,74,0.15)', border: '1px solid rgba(22,163,74,0.3)', color: '#4ade80', animationDelay: '0ms' }}>
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
               Novo: AI Scribe — transcrição automática de consultas
             </div>
 
-            {/* Headline */}
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight mb-6">
-              Gestão{' '}
-              <span className="text-transparent bg-clip-text"
-                style={{ backgroundImage: 'linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #0d9488 100%)' }}>
-                veterinária
-              </span>
-              {' '}que seus concorrentes não têm
-            </h1>
+            <AnimatedHeadline />
 
-            {/* Sub */}
-            <p className="text-lg text-white/60 mb-8 leading-relaxed max-w-lg">
+            <p className="hero-rise text-lg text-white/60 mb-8 leading-relaxed max-w-lg" style={{ animationDelay: '620ms' }}>
               Prontuário digital, agenda online, AI Scribe, telemedicina e NF-e em um sistema feito para clínicas brasileiras.
             </p>
 
-            {/* Checklist */}
-            <ul className="space-y-3 mb-10">
+            <ul className="hero-rise space-y-3 mb-10" style={{ animationDelay: '700ms' }}>
               {[
                 '14 dias grátis, sem cartão de crédito',
                 'PIX, boleto e cartão — 100% brasileiro',
@@ -279,8 +500,7 @@ export default function HeroSection() {
               ))}
             </ul>
 
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-10">
+            <div className="hero-rise flex flex-col sm:flex-row gap-4 mb-10" style={{ animationDelay: '780ms' }}>
               <Link href="/register"
                 className="group inline-flex items-center justify-center gap-2 font-bold px-8 py-4 rounded-2xl text-sm transition-all duration-200 shadow-lg hover:shadow-green-500/25 hover:scale-[1.02]"
                 style={{ background: 'linear-gradient(135deg, #16a34a 0%, #0d9488 100%)', color: '#fff' }}>
@@ -294,8 +514,7 @@ export default function HeroSection() {
               </Link>
             </div>
 
-            {/* Social proof — avatars com emojis de pets */}
-            <div className="flex items-center gap-4 mb-8">
+            <div className="hero-rise flex items-center gap-4 mb-8" style={{ animationDelay: '860ms' }}>
               <div className="flex -space-x-2">
                 {['🐕', '🐈', '🦜', '🐴', '🐇'].map((pet, i) => (
                   <div key={i}
@@ -314,7 +533,7 @@ export default function HeroSection() {
             </div>
 
             {/* ── Seletor de espécies ─────────────────────────────── */}
-            <div className="pt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="hero-rise pt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', animationDelay: '940ms' }}>
               <p className="text-[10px] uppercase tracking-widest font-semibold mb-3"
                 style={{ color: 'rgba(255,255,255,0.3)' }}>
                 Sua clínica atende
@@ -334,7 +553,7 @@ export default function HeroSection() {
                         transform: isActive ? 'scale(1.06)' : 'scale(1)',
                       }}
                     >
-                      <span className={isActive ? 'animate-bounce-gentle' : ''}>{s.emoji}</span>
+                      <span className={isActive ? 'species-active-emoji' : ''}>{s.emoji}</span>
                       <span>{s.label}</span>
                       {isActive && (
                         <span className="w-1.5 h-1.5 rounded-full"
@@ -347,8 +566,8 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* ── Lado direito: mockup ────────────────────────────────── */}
-          <div className="flex justify-center lg:justify-end">
+          {/* ── Lado direito: mockup com tilt ───────────────────────── */}
+          <div className="hero-rise flex justify-center lg:justify-end" style={{ animationDelay: '400ms' }}>
             <DashboardMockup species={species} />
           </div>
 
