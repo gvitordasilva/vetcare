@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ArrowRight, CheckCircle2, Star, Calendar, Users, DollarSign, Activity, FileText, TrendingUp } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import useTilt from './useTilt'
 
 /* ── Dados por espécie ─────────────────────────────────────────────── */
 const SPECIES = [
@@ -185,61 +186,6 @@ function ParticleField() {
   }, [])
 
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden />
-}
-
-/* ── Tilt 3D com lerp ──────────────────────────────────────────────── */
-// rotateX/Y alvo definidos no mousemove; interpolação (fator 0.08) roda em
-// rAF até convergir — sem listener de rAF permanente quando parado.
-function useTilt(maxRotX = 5, maxRotY = 7) {
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    if (!window.matchMedia('(pointer: fine)').matches) return
-
-    let raf = 0
-    let tx = 0, ty = 0   // alvo (rotateY, rotateX)
-    let cx = 0, cy = 0   // atual
-    let hovering = false
-
-    const loop = () => {
-      cx += (tx - cx) * 0.08
-      cy += (ty - cy) * 0.08
-      el.style.transform = `perspective(1200px) rotateX(${cy.toFixed(2)}deg) rotateY(${cx.toFixed(2)}deg)`
-      if (hovering || Math.abs(tx - cx) > 0.02 || Math.abs(ty - cy) > 0.02) {
-        raf = requestAnimationFrame(loop)
-      } else {
-        raf = 0
-      }
-    }
-    const ensureLoop = () => { if (!raf) raf = requestAnimationFrame(loop) }
-
-    const onMove = (e: MouseEvent) => {
-      const r = el.getBoundingClientRect()
-      const px = (e.clientX - r.left) / r.width - 0.5
-      const py = (e.clientY - r.top) / r.height - 0.5
-      tx = px * maxRotY * 2
-      ty = -py * maxRotX * 2
-      hovering = true
-      ensureLoop()
-    }
-    const onLeave = () => {
-      tx = 0; ty = 0; hovering = false
-      ensureLoop()
-    }
-
-    el.addEventListener('mousemove', onMove)
-    el.addEventListener('mouseleave', onLeave)
-    return () => {
-      cancelAnimationFrame(raf)
-      el.removeEventListener('mousemove', onMove)
-      el.removeEventListener('mouseleave', onLeave)
-    }
-  }, [maxRotX, maxRotY])
-
-  return ref
 }
 
 /* ── Aurora background ─────────────────────────────────────────────── */
