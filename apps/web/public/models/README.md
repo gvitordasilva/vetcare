@@ -9,11 +9,11 @@ deploy para ativar.
 
 | Arquivo | Espécie no hero | Status |
 |---|---|---|
-| `horse.glb` | Grande Porte | ✅ ativo |
-| `parrot.glb` | Exótico | ✅ ativo |
-| `german-shepherd.glb` | Cão | ⏳ aguardando re-download em glTF |
-| `cat.glb` | Gato | ⏳ aguardando re-download em glTF |
-| `rabbit.glb` | (reservado — seção CTA) | ⏳ aguardando re-download em glTF |
+| `horse.glb` (2,6 MB) | Grande Porte | ✅ ativo |
+| `parrot.glb` (72 KB) | Exótico | ✅ ativo |
+| `german-shepherd.glb` (756 KB) | Cão | ✅ ativo |
+| `cat.glb` (3,2 MB) | Gato | ✅ ativo |
+| `rabbit.glb` (76 KB) | reservado — futura seção CTA | 📦 otimizado, não usado ainda |
 
 > **No Sketchfab, baixe sempre no formato "glTF"** (não "original"/FBX/blend).
 > O zip baixado contém `scene.gltf` + texturas + `.bin`.

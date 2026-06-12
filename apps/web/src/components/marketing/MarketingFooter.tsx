@@ -98,13 +98,24 @@ export default function MarketingFooter() {
         </div>
 
         {/* Atribuição CC BY dos modelos 3D */}
-        <p className="pt-4 text-[11px] text-gray-700 text-center sm:text-left">
-          Modelos 3D: cavalo por{' '}
+        <p className="pt-4 text-[11px] text-gray-700 text-center sm:text-left leading-relaxed">
+          Modelos 3D (CC BY 4.0):{' '}
+          <a href="https://sketchfab.com/3d-models/german-shepherd-rig-62b04b0d87ba40c9ab826e0534061c59"
+            target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-500 transition-colors">
+            pastor alemão por Puppies4life
+          </a>{' · '}
+          <a href="https://sketchfab.com/3d-models/animated-cat-3d-animal-model-c86d90e98e8e467e92c908206e1ee667"
+            target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-500 transition-colors">
+            gato por AnimalMesh 3D
+          </a>{' · '}
           <a href="https://sketchfab.com/3d-models/free-horse-3d-model-e4ebd72418bb4256b04d0adca6324cdd"
             target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-500 transition-colors">
-            DinoReplicas
-          </a>{' '}
-          (CC BY 4.0) · papagaio do projeto{' '}
+            cavalo por DinoReplicas
+          </a>{' · '}
+          <a href="https://sketchfab.com/3d-models/rabbit-rigged-e7213589744d436b9d96e2dbb31198a5"
+            target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-500 transition-colors">
+            coelho por FourthGreen
+          </a>{' · papagaio do projeto '}
           <a href="https://github.com/mrdoob/three.js" target="_blank" rel="noopener noreferrer"
             className="underline hover:text-gray-500 transition-colors">
             three.js
