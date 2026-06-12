@@ -1,123 +1,186 @@
-import { Star, Quote } from 'lucide-react'
+'use client'
 
-const testimonials = [
+import { Star, PawPrint } from 'lucide-react'
+
+/* ── Depoimentos (6 para o loop ficar variado) ─────────────────────── */
+const TESTIMONIALS = [
   {
     name: 'Dra. Ana Paula Souza',
     role: 'Médica Veterinária',
-    clinic: 'Clínica Vida Animal — SP',
-    initial: 'A',
+    clinic: 'Vida Animal',
+    city: 'São Paulo — SP',
+    monogram: 'VA',
     gradient: 'from-green-400 to-emerald-600',
-    specialty: 'Cães & Gatos',
     specialtyEmoji: '🐕🐈',
-    text: 'O AI Scribe mudou completamente minha rotina. Antes passava 40 minutos preenchendo prontuários — hoje termino a consulta e está tudo lá. Meus Golden Retrievers e Siameses agradecem!',
-    stars: 5,
-    featured: { emoji: '🐕', pet: 'Thor', result: '2h economizadas por dia' },
+    text: 'O AI Scribe mudou minha rotina. Antes passava 40 minutos preenchendo prontuários — hoje termino a consulta e está tudo lá.',
   },
   {
     name: 'Dr. Marco Ribeiro',
-    role: 'Proprietário & Veterinário',
-    clinic: 'PetCenter Saúde — RJ',
-    initial: 'M',
+    role: 'Proprietário',
+    clinic: 'PetCenter Saúde',
+    city: 'Rio de Janeiro — RJ',
+    monogram: 'PC',
     gradient: 'from-blue-400 to-blue-600',
-    specialty: 'Clínica Geral',
-    specialtyEmoji: '🐕🐈🦜',
-    text: 'Migrei de uma planilha Excel bagunçada pro VetCare num fim de semana. Hoje gerencio consultas de cães, gatos e exóticos num sistema só, com financeiro em tempo real.',
-    stars: 5,
-    featured: { emoji: '🦜', pet: 'Kiwi (Calopsita)', result: 'Exóticos e cães no mesmo sistema' },
+    specialtyEmoji: '🐕🦜',
+    text: 'Migrei de uma planilha Excel bagunçada pro VetCare num fim de semana. Hoje vejo o financeiro em tempo real.',
   },
   {
     name: 'Dra. Camila Torres',
     role: 'Diretora Clínica',
-    clinic: 'Rede VetBem — MG (3 unidades)',
-    initial: 'C',
+    clinic: 'Rede VetBem',
+    city: 'Belo Horizonte — MG',
+    monogram: 'VB',
     gradient: 'from-purple-400 to-purple-600',
-    specialty: 'Grandes animais',
     specialtyEmoji: '🐴🐄',
-    text: 'Gerencio 3 unidades com cavalos, bovinos e pequenos animais pelo VetCare. Os relatórios consolidados e o controle por espécie são exatamente o que uma clínica de grande porte precisa.',
-    stars: 5,
-    featured: { emoji: '🐴', pet: 'Trovão (Equino)', result: '3 unidades, 1 sistema' },
+    text: 'Gerencio 3 unidades com equinos, bovinos e pequenos animais. Os relatórios consolidados são exatamente o que eu precisava.',
+  },
+  {
+    name: 'Dr. Felipe Andrade',
+    role: 'Especialista em Exóticos',
+    clinic: 'Exotic Vet',
+    city: 'Curitiba — PR',
+    monogram: 'EV',
+    gradient: 'from-amber-400 to-orange-600',
+    specialtyEmoji: '🦜🦎',
+    text: 'Atendo aves, répteis e roedores. O prontuário flexível do VetCare é o único que se adapta a cada espécie sem gambiarras.',
+  },
+  {
+    name: 'Dra. Juliana Mota',
+    role: 'Sócia-proprietária',
+    clinic: 'Banho & Cia Pet',
+    city: 'Porto Alegre — RS',
+    monogram: 'BC',
+    gradient: 'from-pink-400 to-rose-600',
+    specialtyEmoji: '🐩✂️',
+    text: 'O módulo de Banho & Tosa com pacotes e comissões organizou nossa operação inteira. Os tutores recebem tudo por email.',
+  },
+  {
+    name: 'Dr. Rodrigo Campos',
+    role: 'Médico Veterinário',
+    clinic: 'VetSertão',
+    city: 'Petrolina — PE',
+    monogram: 'VS',
+    gradient: 'from-cyan-400 to-teal-600',
+    specialtyEmoji: '🐕📹',
+    text: 'A telemedicina me permite acompanhar pacientes a 200km de distância. O tutor recebe o link e pronto — funciona.',
   },
 ]
 
+/* ── Card (glassmorphism sobre fundo claro) ────────────────────────── */
+function TestimonialCard({ t }: { t: typeof TESTIMONIALS[0] }) {
+  return (
+    <div
+      className="w-[340px] sm:w-[380px] flex-shrink-0 rounded-3xl p-7 border border-green-100/80 flex flex-col"
+      style={{
+        background: 'rgba(255,255,255,0.72)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        boxShadow: '0 4px 24px rgba(22,163,74,0.06)',
+      }}
+    >
+      {/* Logo fictício da clínica */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2.5">
+          <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${t.gradient} flex items-center justify-center shadow-sm`}>
+            <span className="text-white font-black text-[11px] tracking-tight">{t.monogram}</span>
+          </div>
+          <div>
+            <div className="flex items-center gap-1">
+              <PawPrint className="w-3 h-3 text-gray-300" />
+              <span className="text-sm font-bold text-gray-800 tracking-tight">{t.clinic}</span>
+            </div>
+            <span className="text-[10px] text-gray-400">{t.city}</span>
+          </div>
+        </div>
+        <span className="text-base">{t.specialtyEmoji}</span>
+      </div>
+
+      {/* Stars */}
+      <div className="flex items-center gap-0.5 mb-3">
+        {[...Array(5)].map((_, i) => (
+          <Star key={i} className="w-3.5 h-3.5 text-yellow-400 fill-current" />
+        ))}
+      </div>
+
+      {/* Texto */}
+      <p className="text-gray-600 text-sm leading-relaxed flex-1 mb-5 italic">
+        "{t.text}"
+      </p>
+
+      {/* Autor */}
+      <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
+        <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white font-bold text-xs flex-shrink-0`}>
+          {t.name.split(' ')[1]?.[0] ?? t.name[0]}
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-900">{t.name}</p>
+          <p className="text-xs text-gray-500">{t.role}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function TestimonialsSection() {
   return (
-    <section className="py-24 bg-green-50">
+    <section className="py-24 bg-green-50 overflow-hidden">
+      <style>{`
+        @keyframes testimonialMarquee {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+        .testimonial-track {
+          animation: testimonialMarquee 48s linear infinite;
+          will-change: transform;
+        }
+        .testimonial-marquee:hover .testimonial-track {
+          animation-play-state: paused;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .testimonial-track { animation: none; }
+          .testimonial-marquee { overflow-x: auto; }
+        }
+      `}</style>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-14">
           <div className="inline-flex items-center gap-2 text-green-600 text-sm font-semibold bg-white px-4 py-2 rounded-full mb-4 shadow-sm">
             🐾 Depoimentos reais
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">
             Veterinários que transformaram sua clínica
           </h2>
           <p className="text-lg text-gray-500 max-w-xl mx-auto">
-            De clínicas de cão e gato a hospitais veterinários de grande porte — o VetCare serve a todas.
+            De clínicas de cão e gato a hospitais de grande porte — passe o mouse para pausar e ler.
           </p>
         </div>
+      </div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {testimonials.map((t) => (
-            <div
-              key={t.name}
-              className="bg-white rounded-3xl p-8 shadow-sm border border-green-100 hover:shadow-lg hover:border-green-200 hover:-translate-y-1 transition-all duration-300 flex flex-col"
-            >
-              {/* Quote icon */}
-              <Quote className="w-8 h-8 text-green-200 mb-4 flex-shrink-0" />
+      {/* ── Marquee full-bleed ─────────────────────────────────────── */}
+      <div className="testimonial-marquee relative overflow-hidden">
+        {/* Máscaras de fade nas bordas */}
+        <div className="absolute left-0 top-0 bottom-0 w-16 sm:w-32 z-10 pointer-events-none"
+          style={{ background: 'linear-gradient(to right, #f0fdf4, transparent)' }} />
+        <div className="absolute right-0 top-0 bottom-0 w-16 sm:w-32 z-10 pointer-events-none"
+          style={{ background: 'linear-gradient(to left, #f0fdf4, transparent)' }} />
 
-              {/* Stars */}
-              <div className="flex items-center gap-0.5 mb-4">
-                {[...Array(t.stars)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                ))}
-              </div>
-
-              {/* Specialty badge */}
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-lg">{t.specialtyEmoji}</span>
-                <span className="text-xs font-semibold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
-                  {t.specialty}
-                </span>
-              </div>
-
-              {/* Depoimento */}
-              <p className="text-gray-600 text-sm leading-relaxed flex-1 mb-5 italic">
-                "{t.text}"
-              </p>
-
-              {/* Case destaque */}
-              <div className="flex items-center gap-3 p-3 rounded-2xl mb-5"
-                style={{ background: 'rgba(22,163,74,0.07)', border: '1px solid rgba(22,163,74,0.12)' }}>
-                <span className="text-2xl">{t.featured.emoji}</span>
-                <div>
-                  <p className="text-xs font-bold text-gray-800">{t.featured.result}</p>
-                  <p className="text-[11px] text-gray-400">paciente: {t.featured.pet}</p>
-                </div>
-              </div>
-
-              {/* Autor */}
-              <div className="flex items-center gap-3 pt-4 border-t border-gray-50">
-                {/* Avatar com gradiente */}
-                <div className={`w-11 h-11 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm`}>
-                  {t.initial}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{t.name}</p>
-                  <p className="text-xs text-gray-500">{t.role} · {t.clinic}</p>
-                </div>
-              </div>
-            </div>
+        {/* Track duplicada para loop contínuo (translateX -50%) */}
+        <div className="testimonial-track flex gap-5 w-max py-2 px-4">
+          {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
+            <TestimonialCard key={`${t.clinic}-${i}`} t={t} />
           ))}
         </div>
+      </div>
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Stats bar */}
-        <div className="mt-16 bg-white rounded-3xl border border-green-100 shadow-sm overflow-hidden">
+        <div className="mt-14 bg-white rounded-3xl border border-green-100 shadow-sm overflow-hidden">
           <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-green-50">
             {[
-              { value: '200+', label: 'Clínicas ativas',          emoji: '🏥' },
-              { value: '50k+', label: 'Pacientes gerenciados',     emoji: '🐾' },
-              { value: '98%',  label: 'Taxa de satisfação',        emoji: '⭐' },
+              { value: '200+',   label: 'Clínicas ativas',         emoji: '🏥' },
+              { value: '50k+',   label: 'Pacientes gerenciados',   emoji: '🐾' },
+              { value: '98%',    label: 'Taxa de satisfação',      emoji: '⭐' },
               { value: '< 2min', label: 'Tempo médio de suporte',  emoji: '💬' },
             ].map((stat) => (
               <div key={stat.label} className="text-center py-8 px-4">
@@ -134,16 +197,16 @@ export default function TestimonialsSection() {
           <p className="text-sm text-gray-400 mb-4">Atende todas as espécies</p>
           <div className="flex items-center justify-center flex-wrap gap-3">
             {[
-              { emoji: '🐕', label: 'Cão'          },
-              { emoji: '🐈', label: 'Gato'         },
-              { emoji: '🦜', label: 'Aves'         },
-              { emoji: '🐇', label: 'Coelho'       },
-              { emoji: '🦎', label: 'Répteis'      },
-              { emoji: '🐹', label: 'Roedores'     },
-              { emoji: '🐴', label: 'Equinos'      },
-              { emoji: '🐄', label: 'Bovinos'      },
-              { emoji: '🐟', label: 'Aquáticos'    },
-              { emoji: '🐾', label: 'E mais...'    },
+              { emoji: '🐕', label: 'Cão' },
+              { emoji: '🐈', label: 'Gato' },
+              { emoji: '🦜', label: 'Aves' },
+              { emoji: '🐇', label: 'Coelho' },
+              { emoji: '🦎', label: 'Répteis' },
+              { emoji: '🐹', label: 'Roedores' },
+              { emoji: '🐴', label: 'Equinos' },
+              { emoji: '🐄', label: 'Bovinos' },
+              { emoji: '🐟', label: 'Aquáticos' },
+              { emoji: '🐾', label: 'E mais...' },
             ].map((s) => (
               <div key={s.label}
                 className="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border border-green-100 text-sm text-gray-600 shadow-sm">

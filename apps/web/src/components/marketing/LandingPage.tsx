@@ -1,7 +1,7 @@
 import MarketingHeader    from './MarketingHeader'
 import HeroSection        from './HeroSection'
 import FeaturesSection    from './FeaturesSection'
-import VideoSection       from './VideoSection'
+import DashboardPreviewSection from './DashboardPreviewSection'
 import HowItWorksSection  from './HowItWorksSection'
 import PricingPreview     from './PricingPreview'
 import TestimonialsSection from './TestimonialsSection'
@@ -57,7 +57,7 @@ export default function LandingPage() {
         </div>
 
         {/* Seções claras */}
-        <VideoSection />
+        <DashboardPreviewSection />
         <HowItWorksSection />
         <PricingPreview />
         <TestimonialsSection />
