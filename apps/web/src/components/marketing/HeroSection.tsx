@@ -193,13 +193,13 @@ function AuroraBackground() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
       <div className="absolute inset-0 bg-[#020a05]" />
-      <div className="absolute w-[900px] h-[900px] rounded-full opacity-25 blur-[120px]"
+      <div className="aurora-blob absolute w-[900px] h-[900px] rounded-full opacity-25 blur-[120px]"
         style={{ background: 'radial-gradient(circle, #16a34a 0%, #15803d 40%, transparent 70%)', top: '-20%', left: '-10%', animation: 'aurora1 18s ease-in-out infinite' }} />
-      <div className="absolute w-[700px] h-[700px] rounded-full opacity-20 blur-[100px]"
+      <div className="aurora-blob absolute w-[700px] h-[700px] rounded-full opacity-20 blur-[100px]"
         style={{ background: 'radial-gradient(circle, #0d9488 0%, #0f766e 40%, transparent 70%)', top: '10%', right: '-5%', animation: 'aurora2 22s ease-in-out infinite' }} />
-      <div className="absolute w-[500px] h-[500px] rounded-full opacity-15 blur-[80px]"
+      <div className="aurora-blob absolute w-[500px] h-[500px] rounded-full opacity-15 blur-[80px]"
         style={{ background: 'radial-gradient(circle, #4ade80 0%, #22c55e 40%, transparent 70%)', bottom: '0%', left: '30%', animation: 'aurora3 15s ease-in-out infinite' }} />
-      <div className="absolute w-[600px] h-[600px] rounded-full opacity-10 blur-[90px]"
+      <div className="aurora-blob absolute w-[600px] h-[600px] rounded-full opacity-10 blur-[90px]"
         style={{ background: 'radial-gradient(circle, #7c3aed 0%, #6d28d9 40%, transparent 70%)', top: '40%', left: '20%', animation: 'aurora4 25s ease-in-out infinite' }} />
       <div className="absolute inset-0 opacity-[0.04]"
         style={{
@@ -409,6 +409,7 @@ export default function HeroSection() {
         @media (prefers-reduced-motion: reduce) {
           .hero-word, .hero-rise { animation: none; opacity: 1; }
           .badge-pulse, .species-active-emoji { animation: none; }
+          .aurora-blob { animation: none !important; }
         }
       `}</style>
 
